@@ -1,31 +1,20 @@
 use gpui::*;
-use std::sync::Arc;
-
-mod kanban;
-use kanban::KanbanBoard;
+use vibekanban::KanbanBoard;
 
 fn main() {
-    App::new().run(|cx: &mut AppContext| {
+    Application::new().run(|cx: &mut App| {
+        let bounds = Bounds::centered(None, size(px(1200.0), px(800.0)), cx);
         cx.open_window(
             WindowOptions {
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
                 titlebar: Some(TitlebarOptions {
                     title: Some("VibeKanban".into()),
                     appears_transparent: false,
                     traffic_light_position: None,
                 }),
-                window_bounds: Some(WindowBounds::Windowed(Bounds {
-                    origin: point(px(100.0), px(100.0)),
-                    size: size(px(1200.0), px(800.0)),
-                })),
-                focus: true,
-                show: true,
-                kind: WindowKind::Normal,
-                is_movable: true,
-                display_id: None,
-                window_background: WindowBackgroundAppearance::Opaque,
-                app_id: None,
+                ..Default::default()
             },
-            |cx| cx.new_view(|cx| KanbanBoard::new(cx)),
+            |_, cx| cx.new(|cx| KanbanBoard::new(cx)),
         )
         .unwrap();
     });

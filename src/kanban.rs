@@ -25,7 +25,7 @@ pub struct KanbanBoard {
 }
 
 impl KanbanBoard {
-    pub fn new(cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(_cx: &mut Context<Self>) -> Self {
         let mut board = Self {
             columns: Vec::new(),
             next_card_id: 0,
@@ -87,7 +87,7 @@ impl KanbanBoard {
         }
     }
 
-    fn render_card(&self, card: &Card, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_card(&self, card: &Card) -> impl IntoElement {
         div()
             .bg(card.color)
             .rounded_md()
@@ -112,7 +112,7 @@ impl KanbanBoard {
             )
     }
 
-    fn render_column(&self, column: &Column, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_column(&self, column: &Column) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
@@ -158,17 +158,18 @@ impl KanbanBoard {
             .child(
                 // 卡片列表
                 div()
+                    .id(("column-cards", column.id))
                     .flex()
                     .flex_col()
                     .flex_1()
                     .overflow_y_scroll()
-                    .children(column.cards.iter().map(|card| self.render_card(card, cx))),
+                    .children(column.cards.iter().map(|card| self.render_card(card))),
             )
     }
 }
 
 impl Render for KanbanBoard {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
@@ -204,11 +205,12 @@ impl Render for KanbanBoard {
             .child(
                 // 看板主体区域
                 div()
+                    .id("kanban-columns")
                     .flex()
                     .flex_1()
                     .overflow_x_scroll()
                     .p_6()
-                    .children(self.columns.iter().map(|column| self.render_column(column, cx))),
+                    .children(self.columns.iter().map(|column| self.render_column(column))),
             )
     }
 }

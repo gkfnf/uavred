@@ -1,0 +1,12 @@
+[submodule "refRepo/zed"]
+	path = refRepo/zed
+	url = https://github.com/zed-industries/zed.git
+[submodule "refRepo/vibe-kanban"]
+	path = refRepo/vibe-kanban
+	url = https://github.com/BloopAI/vibe-kanban.git
+[submodule "refRepo/gpui-component"]
+	path = refRepo/gpui-component
+	url = https://github.com/longbridge/gpui-component.git
+[submodule "refRepo/Auto-Claude"]
+	path = refRepo/Auto-Claude
+	url = https://github.com/AndyMik90/Auto-Claude.git

@@ -1,6 +1,54 @@
 # UAV Red Team - TODO
 
-## Phase 1: UI Implementation (HIGHEST PRIORITY)
+## ⭐ Architecture Design Phase (BLOCKER - COMPLETE FIRST)
+
+**Epic Task**: uavred-b3d - Architecture Design: 安全测试意图编排平台
+
+The following design tasks MUST complete before parallel development begins:
+
+- [ ] **uavred-2q4** - 需求梳理 (Target: Week 1)
+  - [ ] Interview human expert and document requirements
+  - [ ] Confirm UAV ecosystem support scope (MAVLink, DJI, ArduPilot, PX4)
+  - [ ] Define web-side testing capabilities
+  - [ ] Define agent execution environment requirements
+  - [ ] Generate `requirements.md` document
+  
+- [ ] **uavred-btg** - 架构设计 (Target: Week 1-2, depends on uavred-2q4)
+  - [ ] Design system architecture (frontend, backend, container, agent capability)
+  - [ ] Generate architecture diagrams and specifications
+  - [ ] Define Agent standard interfaces
+  - [ ] Generate `docs/architecture.md` document
+  
+- [ ] **uavred-ups** - UI/UX 设计 (Target: Week 2-3, depends on uavred-btg)
+  - [ ] Optimize Figma prototypes
+  - [ ] Design high-density information display
+  - [ ] Generate UI/UX specification and component library
+  - [ ] GPUI implementation guidelines
+  
+- [ ] **uavred-2v5** - 工程任务拆分 (Target: Week 3-5, depends on uavred-ups)
+  - [ ] Break down into 20+ concrete development tasks
+  - [ ] Define Phase 1-6 roadmap
+  - [ ] Create all engineering tasks in BD
+  - [ ] Set dependencies for all tasks
+  - [ ] **CRITICAL**: When complete, parallel development can begin
+  
+- [ ] **uavred-8sm** - 风险评估 (Target: Week 5-6, depends on uavred-2v5)
+  - [ ] Identify 15+ technical risks
+  - [ ] Document mitigation strategies
+  - [ ] Test plans for high-risk items
+  
+- [ ] **uavred-eef** - 最终交付 (Target: Week 6-8, depends on uavred-8sm)
+  - [ ] Merge all design documents
+  - [ ] Generate `docs/ARCHITECTURE.md` (>=50 pages)
+  - [ ] Generate `docs/AGENT_DEVELOPMENT_GUIDE.md`
+  - [ ] Create >=10 ADRs (Architecture Decision Records)
+  - [ ] Final review and sign-off
+
+**Status**: Architecture tasks created in BD, awaiting architect-agent assignment
+
+---
+
+## Phase 1: UI Implementation (STARTS AFTER ARCHITECTURE COMPLETE)
 - [x] Project initialization
 - [x] Basic module structure
 - [ ] GPUI dependency resolution

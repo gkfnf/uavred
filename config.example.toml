@@ -1,0 +1,54 @@
+# UAV Red Team Configuration Example
+# Copy this file to config.toml and customize
+
+[app]
+name = "UAV Red Team"
+version = "0.1.0"
+log_level = "info"
+
+[network]
+# Default network scan settings
+timeout_seconds = 30
+max_concurrent_scans = 10
+common_uav_ports = [14550, 14551, 5760, 5761, 8554, 8080]
+
+[protocols]
+# Supported UAV protocols
+enabled = ["mavlink", "dji", "ardupilot", "px4"]
+
+[mavlink]
+system_id = 255
+component_id = 0
+heartbeat_interval_ms = 1000
+
+[scanner]
+# Scanner configuration
+firmware_max_size_mb = 512
+string_min_length = 4
+extract_timeout_seconds = 300
+
+[database]
+# Vulnerability database settings
+auto_update = true
+update_interval_hours = 24
+
+[ui]
+# UI preferences
+theme = "dark"
+window_width = 1280
+window_height = 800
+font_size = 14
+show_tooltips = true
+
+[security]
+# Security settings
+require_authorization = true
+log_all_actions = true
+encrypt_sensitive_data = true
+max_failed_attempts = 3
+
+[export]
+# Export settings
+default_format = "json"
+include_metadata = true
+compress_results = true

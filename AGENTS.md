@@ -1,108 +1,149 @@
-# Agent System Architecture
+# Rust coding guidelines
 
-## Overview
+* Prioritize code correctness and clarity. Speed and efficiency are secondary priorities unless otherwise specified.
+* Do not write organizational or comments that summarize the code. Comments should only be written in order to explain "why" the code is written in some way in the case there is a reason that is tricky / non-obvious.
+* Prefer implementing functionality in existing files unless it is a new logical component. Avoid creating many small files.
+* Avoid using functions that panic like `unwrap()`, instead use mechanisms like `?` to propagate errors.
+* Be careful with operations like indexing which may panic if the indexes are out of bounds.
+* Never silently discard errors with `let _ =` on fallible operations. Always handle errors appropriately:
+  - Propagate errors with `?` when the calling function should handle them
+  - Use `.log_err()` or similar when you need to ignore errors but want visibility
+  - Use explicit error handling with `match` or `if let Err(...)` when you need custom logic
+  - Example: avoid `let _ = client.request(...).await?;` - use `client.request(...).await?;` instead
+* When implementing async operations that may fail, ensure errors propagate to the UI layer so users get meaningful feedback.
+* Never create files with `mod.rs` paths - prefer `src/some_module.rs` instead of `src/some_module/mod.rs`.
+* When creating new crates, prefer specifying the library root path in `Cargo.toml` using `[lib] path = "...rs"` instead of the default `lib.rs`, to maintain consistent and descriptive naming (e.g., `gpui.rs` or `main.rs`).
+* Avoid creative additions unless explicitly requested
+* Use full words for variable names (no abbreviations like "q" for "queue")
+* Use variable shadowing to scope clones in async contexts for clarity, minimizing the lifetime of borrowed references.
+  Example:
+  ```rust
+  executor.spawn({
+      let task_ran = task_ran.clone();
+      async move {
+          *task_ran.borrow_mut() = true;
+      }
+  });
+  ```
 
-UAV Red Team 使用智能 Agent 系统来自主调度和执行渗透测试任务。每个 Agent 都具有特定的能力,可以独立执行任务或协同工作。
+# Timers in tests
 
-## Agent 类型
+* In GPUI tests, prefer GPUI executor timers over `smol::Timer::after(...)` when you need timeouts, delays, or to drive `run_until_parked()`:
+  - Use `cx.background_executor().timer(duration).await` (or `cx.background_executor.timer(duration).await` in `TestAppContext`) so the work is scheduled on GPUI's dispatcher.
+  - Avoid `smol::Timer::after(...)` for test timeouts when you rely on `run_until_parked()`, because it may not be tracked by GPUI's scheduler and can lead to "nothing left to run" when pumping.
 
-### 1. Network Scanner Agent
-- **能力**: 网络扫描、端口探测、服务识别
-- **目标**: 发现网络中的无人机设备
-- **输出**: 设备列表、开放端口、运行服务
+# GPUI
 
-### 2. Protocol Analyzer Agent
-- **能力**: 协议分析、流量解析、漏洞检测
-- **支持协议**: MAVLink, DJI, ArduPilot, PX4
-- **输出**: 协议弱点、潜在攻击向量
+gpui-component is a UI framework which also provides primitives for state and concurrency management and some useful component.
 
-### 3. Firmware Analyzer Agent
-- **能力**: 固件提取、静态分析、漏洞搜索
-- **检测项**: 硬编码凭证、后门、已知漏洞
-- **输出**: 安全问题列表、风险评估
+## Context
 
-### 4. Exploit Executor Agent
-- **能力**: 漏洞利用、权限提升、持久化
-- **安全**: 仅在授权测试环境中使用
-- **输出**: 利用结果、获取的访问权限
+Context types allow interaction with global state, windows, entities, and system services. They are typically passed to functions as the argument named `cx`. When a function takes callbacks they come after the `cx` parameter.
 
-## Agent 调度策略
+* `App` is the root context type, providing access to global state and read and update of entities.
+* `Context<T>` is provided when updating an `Entity<T>`. This context dereferences into `App`, so functions which take `&App` can also take `&Context<T>`.
+* `AsyncApp` and `AsyncWindowContext` are provided by `cx.spawn` and `cx.spawn_in`. These can be held across await points.
 
-### 优先级队列
-- Critical: 立即执行
-- High: 优先执行
-- Medium: 按序执行
-- Low: 资源充足时执行
+## `Window`
 
-### 任务分配
-1. 检查 Agent 能力与任务需求匹配
-2. 选择空闲且能力匹配的 Agent
-3. 分配任务并监控执行状态
-4. 处理结果并触发后续任务
+`Window` provides access to the state of an application window. It is passed to functions as an argument named `window` and comes before `cx` when present. It is used for managing focus, dispatching actions, directly drawing, getting user input state, etc.
 
-### 协同工作
-- Network Scanner 发现设备 → Protocol Analyzer 分析协议
-- Protocol Analyzer 发现漏洞 → Exploit Executor 尝试利用
-- 所有发现汇总到漏洞数据库
+## Entities
 
-## UI 设计原则
+An `Entity<T>` is a handle to state of type `T`. With `thing: Entity<T>`:
 
-遵循高信息密度、简洁优雅的设计风格:
+* `thing.entity_id()` returns `EntityId`
+* `thing.downgrade()` returns `WeakEntity<T>`
+* `thing.read(cx: &App)` returns `&T`.
+* `thing.read_with(cx, |thing: &T, cx: &App| ...)` returns the closure's return value.
+* `thing.update(cx, |thing: &mut T, cx: &mut Context<T>| ...)` allows the closure to mutate the state, and provides a `Context<T>` for interacting with the entity. It returns the closure's return value.
+* `thing.update_in(cx, |thing: &mut T, window: &mut Window, cx: &mut Context<T>| ...)` takes a `AsyncWindowContext` or `VisualTestContext`. It's the same as `update` while also providing the `Window`.
 
-- **布局**: 紧凑但清晰的信息展示
-- **颜色**: 使用语义化颜色(成功/警告/错误)
-- **图标**: 最小化装饰性图标,仅用于功能性标识
-- **字体**: 使用等宽字体展示技术信息
-- **动画**: 简洁的状态转换,避免过度动效
+Within the closures, the inner `cx` provided to the closure must be used instead of the outer `cx` to avoid issues with multiple borrows.
 
-## Development Guidelines
+Trying to update an entity while it's already being updated must be avoided as this will cause a panic.
 
-### Adding New Agents
+When  `read_with`, `update`, or `update_in` are used with an async context, the closure's return value is wrapped in an `anyhow::Result`.
 
-1. 定义 Agent 能力类型 (`AgentCapability`)
-2. 实现 Agent 执行逻辑
-3. 在 Scheduler 中注册
-4. 添加 UI 展示组件
+`WeakEntity<T>` is a weak handle. It has `read_with`, `update`, and `update_in` methods that work the same, but always return an `anyhow::Result` so that they can fail if the entity no longer exists. This can be useful to avoid memory leaks - if entities have mutually recursive handles to each other they will never be dropped.
 
-### Testing Agents
+## Concurrency
 
-```bash
-# 单元测试
-cargo test agent::
+All use of entities and UI rendering occurs on a single foreground thread.
 
-# 集成测试
-cargo test --test agent_integration
+`cx.spawn(async move |cx| ...)` runs an async closure on the foreground thread. Within the closure, `cx` is an async context like `AsyncApp` or `AsyncWindowContext`.
+
+When the outer cx is a `Context<T>`, the use of `spawn` instead looks like `cx.spawn(async move |handle, cx| ...)`, where `handle: WeakEntity<T>`.
+
+To do work on other threads, `cx.background_spawn(async move { ... })` is used. Often this background task is awaited on by a foreground task which uses the results to update state.
+
+Both `cx.spawn` and `cx.background_spawn` return a `Task<R>`, which is a future that can be awaited upon. If this task is dropped, then its work is cancelled. To prevent this one of the following must be done:
+
+* Awaiting the task in some other async context.
+* Detaching the task via `task.detach()` or `task.detach_and_log_err(cx)`, allowing it to run indefinitely.
+* Storing the task in a field, if the work should be halted when the struct is dropped.
+
+A task which doesn't do anything but provide a value can be created with `Task::ready(value)`.
+
+## Elements
+
+The `Render` trait is used to render some state into an element tree that is laid out using flexbox layout. An `Entity<T>` where `T` implements `Render` is sometimes called a "view".
+
+Example:
+
+```
+struct TextWithBorder(SharedString);
+
+impl Render for TextWithBorder {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div().border_1().child(self.0.clone())
+    }
+}
 ```
 
-## Security Considerations
+Since `impl IntoElement for SharedString` exists, it can be used as an argument to `child`. `SharedString` is used to avoid copying strings, and is either an `&'static str` or `Arc<str>`.
 
-- 所有 Agent 操作必须记录日志
-- 仅在授权环境中执行攻击性测试
-- 敏感数据(凭证、密钥)必须加密存储
-- 定期审计 Agent 行为
+UI components that are constructed just to be turned into elements can instead implement the `RenderOnce` trait, which is similar to `Render`, but its `render` method takes ownership of `self`. Types that implement this trait can use `#[derive(IntoElement)]` to use them directly as children.
 
-## Landing the Plane (Session Completion)
+The style methods on elements are similar to those used by Tailwind CSS.
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+If some attributes or children of an element tree are conditional, `.when(condition, |this| ...)` can be used to run the closure only when `condition` is true. Similarly, `.when_some(option, |this, value| ...)` runs the closure when the `Option` has a value.
 
-**MANDATORY WORKFLOW:**
+## Input events
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+Input event handlers can be registered on an element via methods like `.on_click(|event, window, cx: &mut App| ...)`.
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+Often event handlers will want to update the entity that's in the current `Context<T>`. The `cx.listener` method provides this - its use looks like `.on_click(cx.listener(|this: &mut T, event, window, cx: &mut Context<T>| ...)`.
+
+## Actions
+
+Actions are dispatched via user keyboard interaction or in code via `window.dispatch_action(SomeAction.boxed_clone(), cx)` or `focus_handle.dispatch_action(&SomeAction, window, cx)`.
+
+Actions with no data defined with the `actions!(some_namespace, [SomeAction, AnotherAction])` macro call. Otherwise the `Action` derive macro is used. Doc comments on actions are displayed to the user.
+
+Action handlers can be registered on an element via the event handler `.on_action(|action, window, cx| ...)`. Like other event handlers, this is often used with `cx.listener`.
+
+## Notify
+
+When a view's state has changed in a way that may affect its rendering, it should call `cx.notify()`. This will cause the view to be rerendered. It will also cause any observe callbacks registered for the entity with `cx.observe` to be called.
+
+## Entity events
+
+While updating an entity (`cx: Context<T>`), it can emit an event using `cx.emit(event)`. Entities register which events they can emit by declaring `impl EventEmittor<EventType> for EntityType {}`.
+
+Other entities can then register a callback to handle these events by doing `cx.subscribe(other_entity, |this, other_entity, event, cx| ...)`. This will return a `Subscription` which deregisters the callback when dropped.  Typically `cx.subscribe` happens when creating a new entity and the subscriptions are stored in a `_subscriptions: Vec<Subscription>` field.
+
+## Recent API changes
+
+GPUI has had some changes to its APIs. Always write code using the new APIs:
+
+* `spawn` methods now take async closures (`AsyncFn`), and so should be called like `cx.spawn(async move |cx| ...)`.
+* Use `Entity<T>`. This replaces `Model<T>` and `View<T>` which no longer exist and should NEVER be used.
+* Use `App` references. This replaces `AppContext` which no longer exists and should NEVER be used.
+* Use `Context<T>` references. This replaces `ModelContext<T>` which no longer exists and should NEVER be used.
+* `Window` is now passed around explicitly. The new interface adds a `Window` reference parameter to some methods, and adds some new "*_in" methods for plumbing `Window`. The old types `WindowContext` and `ViewContext<T>` should NEVER be used.
+
+
+## General guidelines
+
+- Use `./script/clippy` instead of `cargo clippy`

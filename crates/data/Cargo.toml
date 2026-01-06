@@ -1,0 +1,16 @@
+[package]
+name = "data"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+workspace = { path = "../workspace" }
+serde = { workspace = true }
+gpui = { workspace = true }
+sqlez = { workspace = true }
+sqlez_macros = { workspace = true }
+dirs = { workspace = true }
+indoc = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }

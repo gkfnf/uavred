@@ -1,0 +1,24 @@
+[package]
+name = "uavred"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "uavred"
+path = "src/main.rs"
+
+[dependencies]
+gpui = { workspace = true }
+gpui-component = { workspace = true }
+gpui-component-assets = { workspace = true }
+workspace = { path = "../workspace" }
+ui = { path = "../ui" }
+dashboard_ui = { path = "../dashboard_ui" }
+assets_ui = { path = "../assets_ui" }
+vulns_ui = { path = "../vulns_ui" }
+scan_ui = { path = "../scan_ui" }
+traffic_ui = { path = "../traffic_ui" }
+flows_ui = { path = "../flows_ui" }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }

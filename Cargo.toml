@@ -1,20 +1,53 @@
-[package]
-name = "uav-redteam"
-version = "0.1.0"
-edition = "2021"
-authors = ["Red Team"]
-description = "Autonomous agent-driven red team penetration testing tool for UAV ecosystem"
-license = "MIT"
+[workspace]
+resolver = "2"
+members = [
+    "crates/uavred",
+    "crates/workspace",
+    "crates/agent",
+    "crates/core",
+    "crates/scanner",
+    "crates/data",
+    "crates/ui",
+    "crates/dashboard_ui",
+    "crates/assets_ui",
+    "crates/vulns_ui",
+    "crates/scan_ui",
+    "crates/traffic_ui",
+    "crates/flows_ui",
+]
 
-[dependencies]
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.lints]
+rust = { unsafe_code = "forbid" }
+
+[workspace.dependencies]
 gpui = { git = "https://github.com/zed-industries/zed" }
-ui = { package = "gpui-component", git = "https://github.com/longbridge/gpui-component" }
+gpui-component = { path = "src/gpui-component/crates/ui", package = "gpui-component" }
+gpui-component-assets = { path = "src/gpui-component/crates/assets", package = "gpui-component-assets" }
+gpui-component-macros = { path = "src/gpui-component/crates/macros", package = "gpui-component-macros" }
+gpui-macros = "0.2.2"
+sum-tree = { version = "0.2.0", package = "zed-sum-tree" }
+anyhow = "1"
+notify = "7.0.0"
+ropey = { version = "=2.0.0-beta.1", features = ["metric_lines_lf", "metric_utf16"] }
+rust-i18n = "3"
+schemars = "1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1"
+serde_repr = "0.1"
+smallvec = "1"
+smol = "2"
+tracing = "0.1.41"
+lsp-types = { version = "0.97.0", features = ["proposed"] }
 tokio = { version = "1.35", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 reqwest = { version = "0.11", features = ["json"] }
-anyhow = "1.0"
-tracing = "0.1"
 tracing-subscriber = "0.3"
 chrono = "0.4"
 uuid = { version = "1.6", features = ["v4", "serde"] }
+sqlez = { git = "https://github.com/zed-industries/zed", package = "sqlez" }
+sqlez_macros = { git = "https://github.com/zed-industries/zed", package = "sqlez_macros" }
+dirs = "5.0"
+indoc = "2.0"

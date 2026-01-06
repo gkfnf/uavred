@@ -1,0 +1,11 @@
+[package]
+name = "dashboard_ui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gpui = { workspace = true }
+gpui-component = { path = "../../src/gpui-component/crates/ui", package = "gpui-component" }
+workspace = { path = "../workspace" }
+ui = { path = "../ui" }
+data = { path = "../data" }

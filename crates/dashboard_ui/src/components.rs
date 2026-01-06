@@ -121,7 +121,6 @@ pub fn render_task_card<T: 'static>(
     div()
         .id(("task-card", task_id))
         .w_full()
-        .flex_shrink_0()
         .cursor_pointer()
         .child(card_content)
         .on_mouse_down(

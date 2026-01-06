@@ -160,11 +160,11 @@ fn render_kanban_column(
             // 任务卡片列表 - flex_1，支持滚动
             v_flex()
                 .flex_1()
-                .min_h(px(0.0))
                 .px(header_padding)
                 .pt(px(12.0))
                 .gap(px(8.0))
                 .w_full()
+                .h_full()
                 .items_start()
                 .justify_start()
                 .content_start()

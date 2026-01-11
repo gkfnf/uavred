@@ -1,0 +1,10 @@
+[package]
+name = "monitor_ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+gpui = { workspace = true }
+gpui-component = { path = "../../src/gpui-component/crates/ui", package = "gpui-component" }
+data = { path = "../data" }
+ui = { path = "../ui" }

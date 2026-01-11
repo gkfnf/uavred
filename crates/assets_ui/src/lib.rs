@@ -1,3 +1,9 @@
+pub mod topology_canvas;
+pub mod node_detail;
+
+pub use topology_canvas::TopologyCanvas;
+pub use node_detail::NodeDetail;
+
 use gpui::*;
 use gpui_component::{
     h_flex,

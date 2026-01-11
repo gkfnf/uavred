@@ -2,6 +2,7 @@
 
 use assets_ui::AssetsPanel;
 use dashboard_ui::DashboardPanel;
+use devices_ui::DevicesPanel;
 use flows_ui::FlowsPanel;
 use gpui::*;
 use gpui_component::{
@@ -28,6 +29,7 @@ pub struct Workspace {
     vulns_panel: Option<Entity<VulnsPanel>>,
     traffic_panel: Option<Entity<TrafficPanel>>,
     flows_panel: Option<Entity<FlowsPanel>>,
+    devices_panel: Option<Entity<DevicesPanel>>,
 
     // 全局状态
     scan_input: Option<Entity<InputState>>,
@@ -51,6 +53,7 @@ impl Workspace {
             vulns_panel: None,
             traffic_panel: None,
             flows_panel: None,
+            devices_panel: None,
             scan_input: None,
             assets_tree: None,
             selected_asset: None,
@@ -114,6 +117,16 @@ impl Workspace {
         } else {
             let panel = cx.new(|cx| FlowsPanel::new(cx));
             self.flows_panel = Some(panel.clone());
+            panel
+        }
+    }
+
+    fn get_or_create_devices_panel(&mut self, cx: &mut Context<Self>) -> Entity<DevicesPanel> {
+        if let Some(ref panel) = self.devices_panel {
+            panel.clone()
+        } else {
+            let panel = cx.new(|cx| DevicesPanel::new(cx));
+            self.devices_panel = Some(panel.clone());
             panel
         }
     }
@@ -230,10 +243,8 @@ impl Workspace {
                 panel.clone().into_any_element()
             }
             AppView::Devices => {
-                // TODO: 实现 Devices 面板
-                div()
-                    .child(Label::new("Devices - Coming Soon"))
-                    .into_any_element()
+                let panel = self.get_or_create_devices_panel(cx);
+                panel.clone().into_any_element()
             }
             AppView::Settings => {
                 // TODO: 实现 Settings 面板

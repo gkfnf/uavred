@@ -15,6 +15,11 @@ members = [
     "crates/scan_ui",
     "crates/traffic_ui",
     "crates/flows_ui",
+<<<<<<< Current (Your changes)
+    "crates/devices_ui",
+=======
+    "crates/monitor_ui",
+>>>>>>> Incoming (Background Agent changes)
 ]
 
 [workspace.package]

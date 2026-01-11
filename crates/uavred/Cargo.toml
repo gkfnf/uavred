@@ -12,6 +12,7 @@ gpui = { workspace = true }
 gpui-component = { workspace = true }
 gpui-component-assets = { workspace = true }
 workspace = { path = "../workspace" }
+workspace_ui = { path = "../workspace_ui" }
 ui = { path = "../ui" }
 dashboard_ui = { path = "../dashboard_ui" }
 assets_ui = { path = "../assets_ui" }
@@ -22,3 +23,4 @@ flows_ui = { path = "../flows_ui" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
+

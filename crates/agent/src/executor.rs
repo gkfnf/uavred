@@ -3,7 +3,7 @@ use anyhow::Result;
 use tokio::sync::mpsc;
 
 pub struct TaskExecutor {
-    tx: mpsc::Sender<TaskResult>,
+    _tx: mpsc::Sender<TaskResult>,
     rx: mpsc::Receiver<TaskResult>,
 }
 
@@ -17,7 +17,7 @@ pub struct TaskResult {
 impl TaskExecutor {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel(100);
-        Self { tx, rx }
+        Self { _tx: tx, rx }
     }
 
     pub async fn execute(&self, task: Task) -> Result<TaskResult> {

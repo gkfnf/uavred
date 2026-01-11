@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/uavred",
     "crates/workspace",
+    "crates/workspace_ui",
     "crates/agent",
     "crates/core",
     "crates/scanner",

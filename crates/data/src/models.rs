@@ -11,6 +11,16 @@ pub enum TaskStatus {
     Done,
 }
 
+impl std::fmt::Display for TaskStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TaskStatus::Todo => write!(f, "todo"),
+            TaskStatus::InProgress => write!(f, "in_progress"),
+            TaskStatus::Done => write!(f, "done"),
+        }
+    }
+}
+
 /// 任务数据模型（扩展 workspace::TaskData，添加 status 字段）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskData {
@@ -22,7 +32,13 @@ pub struct TaskData {
 }
 
 impl TaskData {
-    pub fn new(id: usize, title: String, task_type: String, priority: String, status: TaskStatus) -> Self {
+    pub fn new(
+        id: usize,
+        title: String,
+        task_type: String,
+        priority: String,
+        status: TaskStatus,
+    ) -> Self {
         Self {
             id,
             title,
@@ -50,6 +66,7 @@ impl TaskData {
             self.title.clone(),
             self.task_type.clone(),
             self.priority.clone(),
+            self.status.to_string(),
         )
     }
 }

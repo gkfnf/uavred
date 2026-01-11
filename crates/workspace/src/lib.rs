@@ -9,15 +9,23 @@ pub struct TaskData {
     pub title: String,
     pub task_type: String,
     pub priority: String,
+    pub status: String,
 }
 
 impl TaskData {
-    pub fn new(id: usize, title: String, task_type: String, priority: String) -> Self {
+    pub fn new(
+        id: usize,
+        title: String,
+        task_type: String,
+        priority: String,
+        status: String,
+    ) -> Self {
         Self {
             id,
             title,
             task_type,
             priority,
+            status,
         }
     }
 }

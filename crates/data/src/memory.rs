@@ -1,6 +1,6 @@
 // 内存数据实现（当前使用）
 
-use crate::models::{TaskData, TaskStatus, VulnData, AssetData};
+use crate::models::{TaskData, TaskStatus, VulnData, VulnSeverity, AssetData};
 use crate::repository::{TaskRepository, VulnRepository, AssetRepository};
 use workspace::VulnFilter;
 
@@ -74,14 +74,12 @@ impl VulnRepository for MemoryVulnRepository {
     fn get_vulns(&self, filter: VulnFilter) -> Vec<VulnData> {
         self.vulns
             .iter()
-            .filter(|vuln| {
-                match filter {
-                    VulnFilter::All => true,
-                    VulnFilter::Critical => vuln.severity == "critical",
-                    VulnFilter::High => vuln.severity == "high",
-                    VulnFilter::Medium => vuln.severity == "medium",
-                    VulnFilter::Low => vuln.severity == "low",
-                }
+            .filter(|vuln| match filter {
+                VulnFilter::All => true,
+                VulnFilter::Critical => vuln.severity == VulnSeverity::Critical,
+                VulnFilter::High => vuln.severity == VulnSeverity::High,
+                VulnFilter::Medium => vuln.severity == VulnSeverity::Medium,
+                VulnFilter::Low => vuln.severity == VulnSeverity::Low,
             })
             .cloned()
             .collect()
@@ -91,7 +89,7 @@ impl VulnRepository for MemoryVulnRepository {
         self.vulns.push(vuln);
     }
 
-    fn remove_vuln(&mut self, id: usize) {
+    fn remove_vuln(&mut self, id: &str) {
         self.vulns.retain(|v| v.id != id);
     }
 

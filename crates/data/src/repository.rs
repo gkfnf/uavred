@@ -24,7 +24,7 @@ pub trait VulnRepository: Send + Sync {
     /// 添加漏洞
     fn add_vuln(&mut self, vuln: VulnData);
     /// 移除漏洞
-    fn remove_vuln(&mut self, id: usize);
+    fn remove_vuln(&mut self, id: &str);
     /// 更新漏洞
     fn update_vuln(&mut self, vuln: VulnData);
 }

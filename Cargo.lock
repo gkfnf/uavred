@@ -1425,6 +1425,7 @@ dependencies = [
  "sqlez",
  "sqlez_macros",
  "tracing",
+ "uuid",
  "workspace",
 ]
 
@@ -6483,6 +6484,7 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "gpui",
+ "gpui-component",
  "serde",
  "workspace",
 ]

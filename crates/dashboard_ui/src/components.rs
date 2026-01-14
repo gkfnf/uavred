@@ -70,7 +70,7 @@ pub fn render_kanban_column_header<T: 'static>(
         )
 }
 
-/// 任务卡片
+/// 任务卡片 - 简洁紧凑的设计，符合 Kanban 风格
 pub fn render_task_card<T: 'static>(
     cx: &mut Context<T>,
     task: &TaskData,
@@ -79,28 +79,18 @@ pub fn render_task_card<T: 'static>(
 ) -> impl IntoElement {
     let task_id = task.id;
 
-    // 类型标签颜色（蓝色背景）
-    let type_bg = rgb(0x3b82f6);
-    let type_text = rgb(0xffffff);
-
-    // 优先级标签颜色
-    let (priority_bg, priority_text) = match task.priority.as_str() {
-        "critical" => (rgb(0xef4444), rgb(0xffffff)),
-        "high" => (rgb(0xef4444), rgb(0xffffff)),
-        "medium" => (rgb(0xf97316), rgb(0xffffff)),
-        _ => (rgb(0x10b981), rgb(0xffffff)),
-    };
-
-    let mut card_content = div()
+    let mut card = div()
         .bg(rgb(0xffffff))
-        .rounded(px(8.0))
-        .shadow_sm()
+        .rounded(px(6.0))
         .border(px(1.0))
         .border_color(rgb(0xe5e7eb))
-        .p(px(12.0))
-        .gap(px(8.0))
+        .p(px(10.0))
+        .gap(px(6.0))
         .flex_col()
+        .w_full()
+        .mb(px(8.0))
         .child(
+            // 卡片头部：标题 + 菜单
             h_flex()
                 .justify_between()
                 .items_center()
@@ -112,52 +102,33 @@ pub fn render_task_card<T: 'static>(
                         .text_color(rgb(0x1f2937)),
                 )
                 .child(
-                    h_flex()
-                        .gap(px(4.0))
-                        .child(
-                            Button::new(format!("task-menu-{}", task_id))
-                                .ghost()
-                                .icon(IconName::Ellipsis)
-                                .xsmall()
-                        )
-                )
-        )
-        .child(
-            Label::new("")
-                .text_xs()
-                .text_color(rgb(0x9ca3af))
-        )
-        .child(
-            h_flex()
-                .gap(px(4.0))
-                .items_center()
-                .child(
-                    Tag::new()
+                    Button::new(format!("task-menu-{}", task_id))
+                        .ghost()
+                        .icon(IconName::Ellipsis)
                         .xsmall()
-                        .bg(type_bg)
-                        .text_color(type_text)
-                        .child(Label::new(&task.task_type).text_xs()),
-                )
-                .child(
-                    Tag::new()
-                        .xsmall()
-                        .bg(priority_bg)
-                        .text_color(priority_text)
-                        .child(Label::new(&task.priority).text_xs()),
                 )
         );
     
+    // 如果有任务类型，显示它
+    if !task.task_type.is_empty() && task.task_type != "TASK" {
+        card = card.child(
+            Label::new(&task.task_type)
+                .text_xs()
+                .text_color(rgb(0x6b7280))
+        );
+    }
+    
+    // 如果选中，更新边框
     if is_selected {
-        card_content = card_content.border(px(2.0)).border_color(rgb(0x7c3aed));
+        card = card.border_color(rgb(0x3b82f6)).border(px(2.0));
     }
 
-    // 使用稳定的 ElementId（元组格式，参考 zed 的模式）
+    // 卡片容器 - 可点击选择
     div()
         .id(("task-card", task_id))
         .w_full()
         .cursor_pointer()
-        .mb(px(8.0))
-        .child(card_content)
+        .child(card)
         .on_mouse_down(
             MouseButton::Left,
             cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {

@@ -13,14 +13,14 @@ use gpui_component::{
     v_flex, IconName, Sizable,
 };
 
-/// Mission Control 主视图
+/// Mission Control 主视图 - Kanban 看板 + 任务详情面板
 pub fn render_mission_control(
     panel: &mut DashboardPanel,
     window: &mut Window,
     cx: &mut Context<DashboardPanel>,
 ) -> impl IntoElement {
     let selected_task_id = panel.selected_task_id;
-    let header_padding = px(16.0);
+    let header_padding = px(12.0);
 
     // 克隆任务列表以避免借用问题
     let todo_tasks = panel.todo_tasks.clone();
@@ -31,21 +31,19 @@ pub fn render_mission_control(
 
     h_flex()
         .flex_1()
-        .pt(px(0.0))
-        .px(px(24.0))
-        .pb(px(24.0))
-        .gap(px(16.0))
+        .gap(px(0.0))
         .items_start()
         .justify_start()
+        .bg(rgb(0xf5f5f5))
         .child(
-            // 看板五列 - 有详情面板时 flex_1，无详情面板时占满
+            // 左侧：看板五列
             h_flex()
                 .flex_1()
-                .gap(px(16.0))
+                .gap(px(12.0))
                 .items_start()
                 .justify_start()
-                .h(px(0.0))
-                .min_h_full()
+                .h_full()
+                .p(px(12.0))
                 .child(render_kanban_column(
                     panel,
                     window,
@@ -153,9 +151,16 @@ pub fn render_mission_control(
                 )),
         )
         .child(
-            // 右侧：详情面板（可选）
+            // 右侧：详情面板（当选中任务时显示）
             if let Some(task_id) = selected_task_id {
-                render_task_detail_panel(panel, window, cx, task_id).into_any_element()
+                v_flex()
+                    .w(px(450.0))
+                    .h_full()
+                    .bg(rgb(0xffffff))
+                    .border_l(px(1.0))
+                    .border_color(rgb(0xe5e7eb))
+                    .child(render_task_detail_panel(panel, window, cx, task_id))
+                    .into_any_element()
             } else {
                 div().into_any_element()
             },
@@ -266,13 +271,8 @@ fn render_task_detail_panel(
     };
 
     v_flex()
-        .w(px(400.0))
-        .h_full()
-        .bg(rgb(0xffffff))
-        .border_l(px(1.0))
-        .border_color(rgb(0xe5e7eb))
-        .p(px(24.0))
-        .gap(px(16.0))
+        .gap(px(12.0))
+        .p(px(16.0))
         .child(
             // Panel Header
             h_flex()

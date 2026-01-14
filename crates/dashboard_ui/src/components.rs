@@ -34,28 +34,29 @@ pub fn render_kanban_column_header<T: 'static>(
 
     h_flex()
         .flex_1()
-        .h(px(48.0))
+        .h(px(32.0))
         .px(header_padding)
+        .py(px(4.0))
         .items_center()
         .justify_between()
         .bg(rgb(0xf9fafb))
-        .rounded(px(8.0))
+        .rounded(px(6.0))
         .border_b(px(1.0))
         .border_color(rgb(0xe5e7eb))
         .child(
             h_flex()
-                .gap(px(8.0))
+                .gap(px(6.0))
                 .items_center()
-                .child(div().w(px(8.0)).h(px(8.0)).rounded_full().bg(indicator_color))
+                .child(div().w(px(6.0)).h(px(6.0)).rounded_full().bg(indicator_color))
                 .child(
                     Label::new(title_str)
-                        .text_base()
+                        .text_sm()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(rgb(0x1f2937)),
                 )
                 .child(
                     Label::new(format!("({})", count))
-                        .text_sm()
+                        .text_xs()
                         .text_color(rgb(0x6b7280)),
                 ),
         )
@@ -63,7 +64,7 @@ pub fn render_kanban_column_header<T: 'static>(
             Button::new(format!("add-task-{}", column_index))
                 .ghost()
                 .icon(IconName::Plus)
-                .small()
+                .xsmall()
                 .on_click(cx.listener(move |this, _, window, cx| {
                     on_add(this, window, cx, column_index);
                 })),

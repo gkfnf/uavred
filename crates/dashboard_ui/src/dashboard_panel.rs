@@ -1,7 +1,10 @@
 // Dashboard 面板 Entity - 类似 zed 的 Pane
 
 use crate::findings::render_findings_view;
-use crate::mission_control::render_mission_control;
+use crate::stat_card::render_stat_cards;
+use crate::progress_ring::render_task_progress_ring;
+use crate::recent_findings::{render_recent_findings, RecentFinding};
+use crate::quick_actions::render_quick_actions;
 use data::{TaskData, TaskStatus, TaskStore};
 use gpui::EventEmitter;
 use gpui::*;
@@ -10,6 +13,7 @@ use gpui_component::{
     h_flex, v_flex, Selectable, Sizable,
 };
 use ui::events::DashboardEvent;
+use ui::theme::*;
 use workspace::DashboardView;
 
 /// Dashboard 面板 - 管理 Mission Control 和 Findings 两个子视图
@@ -18,7 +22,9 @@ pub struct DashboardPanel {
     pub selected_task_id: Option<usize>,
     pub todo_tasks: Vec<TaskData>,
     pub in_progress_tasks: Vec<TaskData>,
+    pub in_review_tasks: Vec<TaskData>,
     pub done_tasks: Vec<TaskData>,
+    pub canceled_tasks: Vec<TaskData>,
     task_store: Entity<TaskStore>,
     _subscriptions: Vec<Subscription>,
 }
@@ -36,7 +42,9 @@ impl DashboardPanel {
             selected_task_id: None,
             todo_tasks: Vec::new(),
             in_progress_tasks: Vec::new(),
+            in_review_tasks: Vec::new(),
             done_tasks: Vec::new(),
+            canceled_tasks: Vec::new(),
             task_store: task_store.clone(),
             _subscriptions: Vec::new(),
         };
@@ -48,14 +56,18 @@ impl DashboardPanel {
                 // 从 this.task_store 读取最新数据
                 this.todo_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Todo);
                 this.in_progress_tasks = this.task_store.read(cx).get_tasks(TaskStatus::InProgress);
+                this.in_review_tasks = this.task_store.read(cx).get_tasks(TaskStatus::InReview);
                 this.done_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Done);
+                this.canceled_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Canceled);
                 cx.notify();
             }));
 
         // 初始化任务列表
         panel.todo_tasks = task_store.read(cx).get_tasks(TaskStatus::Todo);
         panel.in_progress_tasks = task_store.read(cx).get_tasks(TaskStatus::InProgress);
+        panel.in_review_tasks = task_store.read(cx).get_tasks(TaskStatus::InReview);
         panel.done_tasks = task_store.read(cx).get_tasks(TaskStatus::Done);
+        panel.canceled_tasks = task_store.read(cx).get_tasks(TaskStatus::Canceled);
 
         panel
     }
@@ -87,6 +99,26 @@ impl DashboardPanel {
 
         cx.emit(DashboardEvent::TaskAdded(task.to_workspace()));
     }
+
+    pub fn on_new_task(&mut self, cx: &mut Context<Self>) {
+        let new_id = self.get_next_task_id(cx);
+        let new_task = TaskData::new(
+            new_id,
+            "New Task".to_string(),
+            "TASK".to_string(),
+            "medium".to_string(),
+            TaskStatus::Todo,
+        );
+        self.add_task(new_task, cx);
+    }
+
+    pub fn on_run_scan(&mut self, _cx: &mut Context<Self>) {
+        // TODO: Implement scan triggering
+    }
+
+    pub fn on_export(&mut self, _cx: &mut Context<Self>) {
+        // TODO: Implement export functionality
+    }
 }
 
 impl Render for DashboardPanel {
@@ -97,7 +129,65 @@ impl Render for DashboardPanel {
             .child(self.render_header(cx))
             .child(match self.view {
                 DashboardView::MissionControl => {
-                    render_mission_control(self, window, cx).into_any_element()
+                    v_flex()
+                        .size_full()
+                        .gap(SPACING_LG)
+                        .px(PADDING_LG)
+                        .pt(PADDING_LG)
+                        .child(
+                            render_quick_actions(
+                                cx,
+                                move |this, cx| {
+                                    this.on_new_task(cx);
+                                },
+                                move |this, cx| {
+                                    this.on_run_scan(cx);
+                                },
+                                move |this, cx| {
+                                    this.on_export(cx);
+                                },
+                            )
+                        )
+                        .child(
+                            render_stat_cards(
+                                self.todo_tasks.len(),
+                                self.in_progress_tasks.len(),
+                                self.in_review_tasks.len(),
+                                self.done_tasks.len(),
+                                0,
+                            )
+                        )
+                        .child(
+                            render_task_progress_ring(
+                                self.todo_tasks.len() + self.in_progress_tasks.len() +
+                                    self.in_review_tasks.len() + self.done_tasks.len() +
+                                    self.canceled_tasks.len(),
+                                self.done_tasks.len(),
+                            )
+                        )
+                        .child(
+                            render_recent_findings(&[
+                                RecentFinding::new(
+                                    "MAVLink Buffer Overflow",
+                                    "critical",
+                                    "DJI Mavic 3",
+                                    "2m ago",
+                                ),
+                                RecentFinding::new(
+                                    "DJI Auth Bypass",
+                                    "critical",
+                                    "DJI Mavic 3",
+                                    "5m ago",
+                                ),
+                                RecentFinding::new(
+                                    "MySQL Default Creds",
+                                    "high",
+                                    "GCS Primary",
+                                    "8m ago",
+                                ),
+                            ])
+                        )
+                        .into_any_element()
                 }
                 DashboardView::Findings => {
                     render_findings_view(self, window, cx).into_any_element()

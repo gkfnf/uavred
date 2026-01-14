@@ -66,24 +66,18 @@ fn render_findings(&self, findings: &[VulnData]) -> impl IntoElement {
   - Updated `DashboardPanel` to track 5 task lists (in_review_tasks, canceled_tasks)
   - Updated `mission_control.rs` to render 5 columns
   - Column index adjusted from 0,1,2 to 0,1,2,3,4
-- [x] 完善统计卡片数据绑定 (Enhance stat card data binding)
-  - Created `stat_card.rs` with render_stat_card() function
-  - Displays counts for: To Do, In Progress, In Review, Done, Critical vulns
-  - Shows dynamic data from DashboardPanel task lists
-  - Color-coded with severity themes
-- [x] 实现任务进度环形图 (Implement task progress ring chart)
-  - Created `progress_ring.rs` with visual progress indicator
-  - Shows percentage completion and remaining task count
-  - Uses green progress bar visualization
-- [x] 添加最近发现列表 (Add recent findings list)
-  - Created `recent_findings.rs` with RecentFinding struct
-  - Displays up to 5 recent vulnerability findings
-  - Shows severity badges, asset, and timestamp
-- [x] 实现快速操作按钮 (Implement quick action buttons)
-  - Created `quick_actions.rs` with render_quick_actions() function
-  - Buttons: New Task, Run Scan, Export Report
-  - Connected to DashboardPanel action handlers (on_new_task, on_run_scan, on_export)
-- [x] 清理 dashboard_ui/theme.rs (迁移到 ui::theme)
-  - Removed duplicate theme constants from dashboard_ui
-  - All new components use `use ui::theme::*`
-  - Consolidated to single source of truth in ui crate
+- [x] 完善 Kanban 列标题 - 根据 KANBAN_UI_TASKS.md
+  - Enhanced `render_kanban_column_header` with status-specific color indicators
+  - To Do: Dark Grey, In Progress: Blue, In Review: Orange, Done: Green, Cancelled: Red
+  - Added border bottom for visual separation
+- [x] 优化任务卡片 - 根据 KANBAN_UI_TASKS.md
+  - Improved `render_task_card` with better card styling
+  - Added action button (Ellipsis menu) to card header
+  - Updated to use proper white background with shadow and border
+  - Proper padding and spacing for content
+  - Support for tags and action buttons
+- [x] 修复 MissionControl 布局
+  - Removed incorrectly placed stat_card, progress_ring, recent_findings, quick_actions
+  - MissionControl now displays pure Kanban board as per design
+  - Restored proper separation: MissionControl = Kanban view, Findings = Vulnerabilities view
+  - Cleaned up dashboard_panel.rs render method

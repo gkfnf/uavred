@@ -25,7 +25,9 @@ pub fn render_mission_control(
     // 克隆任务列表以避免借用问题
     let todo_tasks = panel.todo_tasks.clone();
     let in_progress_tasks = panel.in_progress_tasks.clone();
+    let in_review_tasks = panel.in_review_tasks.clone();
     let done_tasks = panel.done_tasks.clone();
+    let canceled_tasks = panel.canceled_tasks.clone();
 
     h_flex()
         .flex_1()
@@ -36,7 +38,7 @@ pub fn render_mission_control(
         .items_start()
         .justify_start()
         .child(
-            // 看板三列 - 有详情面板时 flex_1，无详情面板时占满
+            // 看板五列 - 有详情面板时 flex_1，无详情面板时占满
             h_flex()
                 .flex_1()
                 .gap(px(16.0))
@@ -90,9 +92,30 @@ pub fn render_mission_control(
                     panel,
                     window,
                     cx,
+                    "In Review",
+                    &in_review_tasks,
+                    2,
+                    header_padding,
+                    TaskStatus::InReview,
+                    move |this, _window, cx, _idx| {
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::InReview,
+                        );
+                        this.add_task(new_task, cx);
+                    },
+                ))
+                .child(render_kanban_column(
+                    panel,
+                    window,
+                    cx,
                     "Done",
                     &done_tasks,
-                    2,
+                    3,
                     header_padding,
                     TaskStatus::Done,
                     move |this, _window, cx, _idx| {
@@ -103,6 +126,27 @@ pub fn render_mission_control(
                             "TASK".to_string(),
                             "medium".to_string(),
                             TaskStatus::Done,
+                        );
+                        this.add_task(new_task, cx);
+                    },
+                ))
+                .child(render_kanban_column(
+                    panel,
+                    window,
+                    cx,
+                    "Cancelled",
+                    &canceled_tasks,
+                    4,
+                    header_padding,
+                    TaskStatus::Canceled,
+                    move |this, _window, cx, _idx| {
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::Canceled,
                         );
                         this.add_task(new_task, cx);
                     },
@@ -195,7 +239,9 @@ fn render_task_detail_panel(
         .todo_tasks
         .iter()
         .chain(panel.in_progress_tasks.iter())
+        .chain(panel.in_review_tasks.iter())
         .chain(panel.done_tasks.iter())
+        .chain(panel.canceled_tasks.iter())
         .find(|t| t.id == task_id);
 
     // 任务详情数据（根据设计图）

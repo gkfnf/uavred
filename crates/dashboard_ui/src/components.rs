@@ -3,7 +3,6 @@
 use gpui::*;
 use gpui_component::{
     button::{Button, ButtonVariants as _},
-    group_box::{GroupBox, GroupBoxVariants as _},
     h_flex,
     label::Label,
     tag::Tag,
@@ -22,6 +21,16 @@ pub fn render_kanban_column_header<T: 'static>(
     on_add: impl Fn(&mut T, &mut Window, &mut Context<T>, usize) + 'static,
 ) -> impl IntoElement {
     let title_str = title.to_string();
+    
+    // 根据列的状态选择指示器颜色
+    let indicator_color = match column_index {
+        0 => rgb(0x374151), // To Do: Dark Grey
+        1 => rgb(0x3b82f6), // In Progress: Blue
+        2 => rgb(0xf97316), // In Review: Orange
+        3 => rgb(0x10b981), // Done: Green
+        4 => rgb(0xef4444), // Cancelled: Red
+        _ => rgb(0x6b7280), // Default: Grey
+    };
 
     h_flex()
         .flex_1()
@@ -31,12 +40,13 @@ pub fn render_kanban_column_header<T: 'static>(
         .justify_between()
         .bg(rgb(0xf9fafb))
         .rounded(px(8.0))
-        .items_start()
+        .border_b(px(1.0))
+        .border_color(rgb(0xe5e7eb))
         .child(
             h_flex()
                 .gap(px(8.0))
                 .items_center()
-                .child(div().w(px(8.0)).h(px(8.0)).rounded_full().bg(rgb(0x6b7280)))
+                .child(div().w(px(8.0)).h(px(8.0)).rounded_full().bg(indicator_color))
                 .child(
                     Label::new(title_str)
                         .text_base()
@@ -81,38 +91,62 @@ pub fn render_task_card<T: 'static>(
         _ => (rgb(0x10b981), rgb(0xffffff)),
     };
 
-    let mut card_content = GroupBox::new().outline().child(
-        v_flex()
-            .gap(px(8.0))
-            .p(px(12.0))
-            .child(
-                Label::new(&task.title)
-                    .text_sm()
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(rgb(0x1f2937)),
-            )
-            .child(
-                h_flex()
-                    .gap(px(4.0))
-                    .items_center()
-                    .child(
-                        Tag::new()
-                            .small()
-                            .bg(type_bg)
-                            .text_color(type_text)
-                            .child(Label::new(&task.task_type).text_xs()),
-                    )
-                    .child(
-                        Tag::new()
-                            .small()
-                            .bg(priority_bg)
-                            .text_color(priority_text)
-                            .child(Label::new(&task.priority).text_xs()),
-                    ),
-            ),
-    );
-
-    // 选中状态：紫色边框
+    let mut card_content = div()
+        .bg(rgb(0xffffff))
+        .rounded(px(8.0))
+        .shadow_sm()
+        .border(px(1.0))
+        .border_color(rgb(0xe5e7eb))
+        .p(px(12.0))
+        .gap(px(8.0))
+        .flex_col()
+        .child(
+            h_flex()
+                .justify_between()
+                .items_center()
+                .w_full()
+                .child(
+                    Label::new(&task.title)
+                        .text_sm()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(0x1f2937)),
+                )
+                .child(
+                    h_flex()
+                        .gap(px(4.0))
+                        .child(
+                            Button::new(format!("task-menu-{}", task_id))
+                                .ghost()
+                                .icon(IconName::Ellipsis)
+                                .xsmall()
+                        )
+                )
+        )
+        .child(
+            Label::new("")
+                .text_xs()
+                .text_color(rgb(0x9ca3af))
+        )
+        .child(
+            h_flex()
+                .gap(px(4.0))
+                .items_center()
+                .child(
+                    Tag::new()
+                        .xsmall()
+                        .bg(type_bg)
+                        .text_color(type_text)
+                        .child(Label::new(&task.task_type).text_xs()),
+                )
+                .child(
+                    Tag::new()
+                        .xsmall()
+                        .bg(priority_bg)
+                        .text_color(priority_text)
+                        .child(Label::new(&task.priority).text_xs()),
+                )
+        );
+    
     if is_selected {
         card_content = card_content.border(px(2.0)).border_color(rgb(0x7c3aed));
     }
@@ -122,6 +156,7 @@ pub fn render_task_card<T: 'static>(
         .id(("task-card", task_id))
         .w_full()
         .cursor_pointer()
+        .mb(px(8.0))
         .child(card_content)
         .on_mouse_down(
             MouseButton::Left,

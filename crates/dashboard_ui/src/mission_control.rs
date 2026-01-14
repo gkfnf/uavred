@@ -184,8 +184,7 @@ fn render_kanban_column(
 
     v_flex()
         .flex_1()
-        .h(px(0.0))
-        .min_h_full()
+        .h_full()
         .bg(rgb(0xf9fafb))
         .rounded(px(8.0))
         .overflow_hidden()
@@ -193,7 +192,7 @@ fn render_kanban_column(
         .justify_start()
         .content_start()
         .child(
-            // 标题栏 - 固定高度
+            // 标题栏 - 自适应高度，不占用过多空间
             render_kanban_column_header(
                 cx,
                 title,
@@ -206,14 +205,13 @@ fn render_kanban_column(
             ),
         )
         .child(
-            // 任务卡片列表 - flex_1，支持滚动
+            // 任务卡片列表 - flex_1，占用剩余空间
             v_flex()
                 .flex_1()
                 .px(header_padding)
-                .pt(px(12.0))
+                .pt(px(8.0))
                 .gap(px(8.0))
                 .w_full()
-                .h_full()
                 .items_start()
                 .justify_start()
                 .content_start()

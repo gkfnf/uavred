@@ -33,8 +33,9 @@ pub fn render_kanban_column_header<T: 'static>(
     };
 
     h_flex()
-        .flex_1()
+        .w_full()
         .h(px(32.0))
+        .flex_none()
         .px(header_padding)
         .py(px(4.0))
         .items_center()

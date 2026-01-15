@@ -72,7 +72,7 @@ pub fn render_kanban_column_header<T: 'static>(
         )
 }
 
-/// 任务卡片 - 简洁紧凑的设计，符合 Kanban 风格
+/// 任务卡片 - 自适应高度，完整显示任务标题
 pub fn render_task_card<T: 'static>(
     cx: &mut Context<T>,
     task: &TaskData,
@@ -95,19 +95,27 @@ pub fn render_task_card<T: 'static>(
             // 卡片头部：标题 + 菜单
             h_flex()
                 .justify_between()
-                .items_center()
+                .items_start()
                 .w_full()
+                .gap(px(6.0))
                 .child(
-                    Label::new(&task.title)
-                        .text_sm()
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(rgb(0x1f2937)),
+                    // 标题 - 允许换行，自动调整高度
+                    div()
+                        .flex_1()
+                        .child(
+                            Label::new(&task.title)
+                                .text_sm()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(rgb(0x1f2937))
+                        )
                 )
                 .child(
+                    // 菜单按钮 - 固定，不会被压缩
                     Button::new(format!("task-menu-{}", task_id))
                         .ghost()
                         .icon(IconName::Ellipsis)
                         .xsmall()
+                        .flex_none()
                 )
         );
     
@@ -125,7 +133,7 @@ pub fn render_task_card<T: 'static>(
         card = card.border_color(rgb(0x3b82f6)).border(px(2.0));
     }
 
-    // 卡片容器 - 可点击选择
+    // 卡片容器 - 可点击选择，自适应大小
     div()
         .id(("task-card", task_id))
         .w_full()

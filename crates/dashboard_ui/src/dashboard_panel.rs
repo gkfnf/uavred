@@ -95,6 +95,21 @@ impl DashboardPanel {
 
         cx.emit(DashboardEvent::TaskAdded(task.to_workspace()));
     }
+
+    pub fn delete_task(&mut self, task_id: usize, cx: &mut Context<Self>) {
+        let task_store = self.task_store.clone();
+
+        task_store.update(cx, |store, cx| {
+            store.delete_task(task_id, cx);
+        });
+
+        // 清空选中状态
+        if self.selected_task_id == Some(task_id) {
+            self.selected_task_id = None;
+        }
+
+        cx.emit(DashboardEvent::TaskRemoved(task_id));
+    }
 }
 
 impl Render for DashboardPanel {

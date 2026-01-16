@@ -1,7 +1,8 @@
-use uavred::Workspace;
 use gpui::*;
 use gpui_component::Root;
 use gpui_component_assets::Assets;
+use uavred::Workspace;
+use data::init_task_store;
 
 fn main() {
     tracing_subscriber::fmt()
@@ -13,6 +14,9 @@ fn main() {
     app.run(move |cx| {
         // Initialize GPUI Component
         gpui_component::init(cx);
+
+        // Initialize TaskStore
+        init_task_store(cx);
 
         // Set light theme as default (matching Figma design)
         gpui_component::Theme::change(gpui_component::ThemeMode::Light, None, cx);

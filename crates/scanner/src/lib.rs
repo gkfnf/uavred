@@ -1,6 +1,6 @@
+pub mod firmware;
 pub mod network;
 pub mod protocol;
-pub mod firmware;
 
 use serde::{Deserialize, Serialize};
 

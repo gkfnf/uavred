@@ -10,7 +10,9 @@ use workspace::TaskData as WorkspaceTaskData;
 pub enum TaskStatus {
     Todo,
     InProgress,
+    InReview,
     Done,
+    Canceled,
 }
 
 impl std::fmt::Display for TaskStatus {
@@ -18,7 +20,9 @@ impl std::fmt::Display for TaskStatus {
         match self {
             TaskStatus::Todo => write!(f, "todo"),
             TaskStatus::InProgress => write!(f, "in_progress"),
+            TaskStatus::InReview => write!(f, "in_review"),
             TaskStatus::Done => write!(f, "done"),
+            TaskStatus::Canceled => write!(f, "canceled"),
         }
     }
 }

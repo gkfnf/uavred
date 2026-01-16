@@ -1,8 +1,8 @@
-pub mod scheduler;
 pub mod executor;
+pub mod scheduler;
 
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Agent {

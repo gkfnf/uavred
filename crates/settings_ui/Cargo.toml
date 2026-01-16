@@ -1,0 +1,10 @@
+[package]
+name = "settings_ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+gpui.workspace = true
+gpui-component.workspace = true
+data = { path = "../data" }
+ui = { path = "../ui" }

@@ -12,12 +12,12 @@ impl NetworkScanner {
 
     pub async fn scan(&self) -> Result<ScanResult> {
         tracing::info!("Starting network scan on: {}", self.target_range);
-        
+
         // TODO: Implement actual network scanning
         // - Port scanning
         // - Service detection
         // - UAV protocol detection (MAVLink, DJI, etc.)
-        
+
         Ok(ScanResult {
             scan_type: ScanType::Network,
             target: self.target_range.clone(),

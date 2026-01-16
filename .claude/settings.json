@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "ralph-wiggum@claude-code-plugins": true
+  }
+}

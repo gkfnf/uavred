@@ -1,7 +1,7 @@
 // 内存数据实现（当前使用）
 
-use crate::models::{TaskData, TaskStatus, VulnData, VulnSeverity, AssetData};
-use crate::repository::{TaskRepository, VulnRepository, AssetRepository};
+use crate::models::{AssetData, TaskData, TaskStatus, VulnData, VulnSeverity};
+use crate::repository::{AssetRepository, TaskRepository, VulnRepository};
 use workspace::VulnFilter;
 
 /// 内存任务仓库实现
@@ -11,9 +11,7 @@ pub struct MemoryTaskRepository {
 
 impl MemoryTaskRepository {
     pub fn new() -> Self {
-        Self {
-            tasks: Vec::new(),
-        }
+        Self { tasks: Vec::new() }
     }
 
     pub fn with_initial_tasks(tasks: Vec<TaskData>) -> Self {
@@ -45,11 +43,7 @@ impl TaskRepository for MemoryTaskRepository {
     }
 
     fn get_next_task_id(&self) -> usize {
-        self.tasks
-            .iter()
-            .map(|t| t.id)
-            .max()
-            .unwrap_or(0) + 1
+        self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1
     }
 }
 
@@ -60,9 +54,7 @@ pub struct MemoryVulnRepository {
 
 impl MemoryVulnRepository {
     pub fn new() -> Self {
-        Self {
-            vulns: Vec::new(),
-        }
+        Self { vulns: Vec::new() }
     }
 
     pub fn with_initial_vulns(vulns: Vec<VulnData>) -> Self {
@@ -107,9 +99,7 @@ pub struct MemoryAssetRepository {
 
 impl MemoryAssetRepository {
     pub fn new() -> Self {
-        Self {
-            assets: Vec::new(),
-        }
+        Self { assets: Vec::new() }
     }
 
     pub fn with_initial_assets(assets: Vec<AssetData>) -> Self {

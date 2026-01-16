@@ -7,16 +7,10 @@ use gpui_component::{
     IconName, Sizable,
 };
 
-pub fn render_add_task_dialog<T: 'static>(
-    cx: &mut Context<T>,
+pub fn render_add_task_dialog(
     title: &str,
     description: &str,
     auto_start: bool,
-    on_title_change: impl Fn(&mut T, &mut Context<T>, String) + 'static,
-    on_description_change: impl Fn(&mut T, &mut Context<T>, String) + 'static,
-    on_auto_start_change: impl Fn(&mut T, &mut Context<T>, bool) + 'static,
-    on_create: impl Fn(&mut T, &mut Context<T>) + 'static,
-    on_close: impl Fn(&mut T, &mut Context<T>) + 'static,
 ) -> impl IntoElement {
     let title_str = title.to_string();
     let description_str = description.to_string();
@@ -39,13 +33,8 @@ pub fn render_add_task_dialog<T: 'static>(
                         .text_color(rgb(0x1f2937))
                 )
                 .child(
-                    Button::new("close-dialog")
-                        .ghost()
-                        .icon(IconName::Close)
-                        .small()
-                        .on_click(cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
-                            on_close(this, cx);
-                        }))
+                    Label::new("")
+                        .text_xs()
                 )
         )
         // 标题输入框
@@ -171,9 +160,6 @@ pub fn render_add_task_dialog<T: 'static>(
                                         .top(px(2.0))
                                         .left(if auto_start { px(22.0) } else { px(2.0) })
                                 )
-                                .on_mouse_down(MouseButton::Left, cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
-                                    on_auto_start_change(this, cx, !auto_start);
-                                }))
                         )
                         .child(
                             Label::new("开始")
@@ -184,9 +170,6 @@ pub fn render_add_task_dialog<T: 'static>(
                             Button::new("create-task")
                                 .primary()
                                 .label("创建")
-                                .on_click(cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
-                                    on_create(this, cx);
-                                }))
                         )
                 )
         )

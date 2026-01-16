@@ -1,8 +1,8 @@
 use crate::{Agent, AgentStatus};
+use anyhow::Result;
 use core::task::Task;
 use std::collections::HashMap;
 use uuid::Uuid;
-use anyhow::Result;
 
 pub struct AgentScheduler {
     agents: HashMap<Uuid, Agent>,

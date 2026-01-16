@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/uavred",
+    "crates/kanban_ui",
     "crates/workspace",
     "crates/workspace_ui",
     "crates/agent",

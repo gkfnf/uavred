@@ -1,5 +1,5 @@
-use core::task::Task;
 use anyhow::Result;
+use core::task::Task;
 use tokio::sync::mpsc;
 
 pub struct TaskExecutor {
@@ -22,10 +22,10 @@ impl TaskExecutor {
 
     pub async fn execute(&self, task: Task) -> Result<TaskResult> {
         tracing::info!("Executing task: {}", task.name);
-        
+
         // Simulate task execution
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        
+
         Ok(TaskResult {
             task_name: task.name.clone(),
             success: true,

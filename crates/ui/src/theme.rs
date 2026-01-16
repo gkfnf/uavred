@@ -56,3 +56,14 @@ pub const MIN_INPUT_HEIGHT: Pixels = px(32.0);
 
 pub const CARD_MIN_WIDTH: Pixels = px(280.0);
 pub const CARD_MAX_WIDTH: Pixels = px(400.0);
+
+pub const STATUS_TODO_BG: u32 = 0xfef3c7;
+pub const STATUS_IN_PROGRESS_BG: u32 = 0xbfdbfe;
+pub const STATUS_IN_REVIEW_BG: u32 = 0xfde68a;
+pub const STATUS_DONE_BG: u32 = 0xd1fae5;
+pub const STATUS_CANCELED_BG: u32 = 0xfecaca;
+
+pub const KANBAN_COLUMN_WIDTH: Pixels = px(320.0);
+pub const KANBAN_CARD_MIN_HEIGHT: Pixels = px(80.0);
+pub const BG_CARD_HOVER: u32 = 0xf9fafb;
+pub const PADDING_XS: Pixels = px(4.0);

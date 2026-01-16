@@ -1,0 +1,196 @@
+//! TaskDetailPanel 组件 - 任务详情面板
+//!
+//! 显示任务的完整信息，包括标题、状态、优先级、类型等
+
+use data::TaskData;
+use gpui::prelude::FluentBuilder as _;
+use gpui::*;
+use gpui_component::{
+    IconName, Sizable, StyledExt as _,
+    button::{Button, ButtonVariants as _},
+    h_flex,
+    scroll::ScrollableElement as _,
+    v_flex,
+};
+use ui::theme::*;
+
+/// 关闭回调类型
+type CloseHandler = Box<dyn Fn(&mut Window, &mut App) + 'static>;
+
+/// 任务详情面板组件
+pub struct TaskDetailPanel {
+    task: Option<TaskData>,
+    on_close: Option<CloseHandler>,
+}
+
+impl TaskDetailPanel {
+    /// 创建新的详情面板
+    pub fn new() -> Self {
+        Self {
+            task: None,
+            on_close: None,
+        }
+    }
+
+    /// 设置要显示的任务
+    pub fn task(mut self, task: Option<TaskData>) -> Self {
+        self.task = task;
+        self
+    }
+
+    /// 设置关闭回调
+    pub fn on_close(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+        self.on_close = Some(Box::new(handler));
+        self
+    }
+
+    /// 渲染信息行
+    fn render_info_row(label: &str, value: impl IntoElement) -> impl IntoElement {
+        h_flex()
+            .items_start()
+            .gap(SPACING_MD)
+            .child(
+                div()
+                    .w(px(80.0))
+                    .text_sm()
+                    .text_color(rgb(TEXT_SECONDARY))
+                    .child(label.to_string()),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .text_sm()
+                    .text_color(rgb(TEXT_PRIMARY))
+                    .child(value),
+            )
+    }
+
+    /// 获取优先级颜色
+    fn priority_color(priority: &str) -> u32 {
+        match priority {
+            "critical" => SEVERITY_CRITICAL,
+            "high" => SEVERITY_HIGH,
+            "medium" => SEVERITY_MEDIUM,
+            "low" => SEVERITY_LOW,
+            _ => TEXT_SECONDARY,
+        }
+    }
+
+    /// 获取状态颜色
+    fn status_color(status: &str) -> u32 {
+        match status {
+            "todo" => TEXT_SECONDARY,
+            "in_progress" => ACCENT_BLUE,
+            "in_review" => SEVERITY_MEDIUM,
+            "done" => STATUS_SUCCESS,
+            "canceled" => SEVERITY_CRITICAL,
+            _ => TEXT_SECONDARY,
+        }
+    }
+}
+
+impl Default for TaskDetailPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Render for TaskDetailPanel {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let task = self.task.clone();
+
+        v_flex()
+            .size_full()
+            .bg(rgb(BG_CARD))
+            .border_l_1()
+            .border_color(rgb(BORDER_COLOR))
+            // 头部
+            .child(
+                h_flex()
+                    .items_center()
+                    .justify_between()
+                    .px(PADDING_LG)
+                    .py(PADDING_MD)
+                    .border_b_1()
+                    .border_color(rgb(BORDER_COLOR))
+                    .child(
+                        div()
+                            .text_base()
+                            .font_semibold()
+                            .text_color(rgb(TEXT_PRIMARY))
+                            .child("Task Details"),
+                    )
+                    .child(
+                        Button::new("close-detail")
+                            .ghost()
+                            .small()
+                            .icon(IconName::Close)
+                            .on_click(cx.listener(|this, _, window, cx| {
+                                if let Some(ref on_close) = this.on_close {
+                                    on_close(window, cx);
+                                }
+                            })),
+                    ),
+            )
+            // 内容区
+            .child(
+                v_flex()
+                    .flex_1()
+                    .overflow_y_scrollbar()
+                    .p(PADDING_LG)
+                    .gap(SPACING_LG)
+                    .when_some(task, |this, task| {
+                        let priority_color = Self::priority_color(&task.priority);
+                        let status_color = Self::status_color(&task.status.to_string());
+
+                        this
+                            // 任务标题
+                            .child(
+                                div()
+                                    .text_lg()
+                                    .font_semibold()
+                                    .text_color(rgb(TEXT_PRIMARY))
+                                    .child(task.title.clone()),
+                            )
+                            // 分隔线
+                            .child(div().h(px(1.0)).bg(rgb(BORDER_COLOR)))
+                            // 状态
+                            .child(Self::render_info_row(
+                                "Status",
+                                div()
+                                    .px(PADDING_SM)
+                                    .py(px(2.0))
+                                    .rounded(BORDER_RADIUS_SM)
+                                    .bg(rgb(status_color))
+                                    .text_color(rgb(0xffffff))
+                                    .child(task.status.to_string()),
+                            ))
+                            // 优先级
+                            .child(Self::render_info_row(
+                                "Priority",
+                                div()
+                                    .px(PADDING_SM)
+                                    .py(px(2.0))
+                                    .rounded(BORDER_RADIUS_SM)
+                                    .bg(rgb(priority_color))
+                                    .text_color(rgb(0xffffff))
+                                    .child(task.priority.clone()),
+                            ))
+                            // 类型
+                            .child(Self::render_info_row("Type", task.task_type.clone()))
+                            // ID
+                            .child(Self::render_info_row("ID", format!("#{}", task.id)))
+                    })
+                    .when(self.task.is_none(), |this| {
+                        this.child(
+                            div()
+                                .flex_1()
+                                .items_center()
+                                .justify_center()
+                                .text_color(rgb(TEXT_MUTED))
+                                .child("Select a task to view details"),
+                        )
+                    }),
+            )
+    }
+}

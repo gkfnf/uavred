@@ -88,7 +88,14 @@ impl TasksDatabase {
         let sql = format!(
             "INSERT OR REPLACE INTO tasks (id, title, task_type, priority, status, created_at, updated_at) \
              VALUES ({}, '{}', '{}', '{}', '{}', COALESCE((SELECT created_at FROM tasks WHERE id = {}), '{}'), '{}')",
-            task.id, title_escaped, task_type_escaped, priority_escaped, status_str, task.id, now, now
+            task.id,
+            title_escaped,
+            task_type_escaped,
+            priority_escaped,
+            status_str,
+            task.id,
+            now,
+            now
         );
 
         connection.exec(&sql)?()?;
@@ -126,7 +133,9 @@ fn status_to_string(status: TaskStatus) -> String {
     match status {
         TaskStatus::Todo => "todo".to_string(),
         TaskStatus::InProgress => "in_progress".to_string(),
+        TaskStatus::InReview => "in_review".to_string(),
         TaskStatus::Done => "done".to_string(),
+        TaskStatus::Canceled => "canceled".to_string(),
     }
 }
 
@@ -134,7 +143,9 @@ fn string_to_status(s: &str) -> Result<TaskStatus> {
     match s {
         "todo" => Ok(TaskStatus::Todo),
         "in_progress" => Ok(TaskStatus::InProgress),
+        "in_review" => Ok(TaskStatus::InReview),
         "done" => Ok(TaskStatus::Done),
+        "canceled" => Ok(TaskStatus::Canceled),
         _ => Err(anyhow::anyhow!("无效的任务状态: {}", s)),
     }
 }

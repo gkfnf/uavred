@@ -1,6 +1,6 @@
 // 数据访问接口（trait）- 为数据库集成做准备
 
-use crate::models::{TaskData, TaskStatus, VulnData, AssetData};
+use crate::models::{AssetData, TaskData, TaskStatus, VulnData};
 use workspace::VulnFilter;
 
 /// 任务数据仓库接口

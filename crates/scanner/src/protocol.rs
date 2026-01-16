@@ -1,4 +1,4 @@
-use crate::{ScanResult, ScanType, Finding};
+use crate::{Finding, ScanResult, ScanType};
 use anyhow::Result;
 
 pub struct ProtocolAnalyzer {
@@ -21,13 +21,13 @@ impl ProtocolAnalyzer {
 
     pub async fn analyze(&self, target: &str) -> Result<ScanResult> {
         tracing::info!("Analyzing protocol: {:?} on {}", self.protocol_type, target);
-        
+
         // TODO: Implement protocol analysis
         // - Parse protocol messages
         // - Check for authentication weaknesses
         // - Test command injection
         // - Verify encryption
-        
+
         Ok(ScanResult {
             scan_type: ScanType::Protocol,
             target: target.to_string(),

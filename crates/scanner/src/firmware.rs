@@ -1,4 +1,4 @@
-use crate::{ScanResult, ScanType, Finding};
+use crate::{Finding, ScanResult, ScanType};
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -13,13 +13,13 @@ impl FirmwareAnalyzer {
 
     pub async fn analyze(&self) -> Result<ScanResult> {
         tracing::info!("Analyzing firmware: {:?}", self.firmware_path);
-        
+
         // TODO: Implement firmware analysis
         // - Extract filesystem
         // - Search for hardcoded credentials
         // - Identify vulnerable libraries
         // - Check for backdoors
-        
+
         Ok(ScanResult {
             scan_type: ScanType::Firmware,
             target: self.firmware_path.to_string_lossy().to_string(),

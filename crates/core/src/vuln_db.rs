@@ -38,7 +38,9 @@ impl VulnerabilityDatabase {
         self.add_vulnerability(Vulnerability {
             id: "UAV-001".to_string(),
             name: "MAVLink Unauthenticated Command Injection".to_string(),
-            description: "MAVLink protocol lacks authentication, allowing arbitrary command injection".to_string(),
+            description:
+                "MAVLink protocol lacks authentication, allowing arbitrary command injection"
+                    .to_string(),
             severity: VulnSeverity::Critical,
             cve: Some("CVE-2023-XXXXX".to_string()),
             affected_systems: vec!["ArduPilot".to_string(), "PX4".to_string()],
@@ -58,7 +60,9 @@ impl VulnerabilityDatabase {
         self.add_vulnerability(Vulnerability {
             id: "UAV-003".to_string(),
             name: "GPS Spoofing Vulnerability".to_string(),
-            description: "UAVs vulnerable to GPS spoofing attacks due to lack of GPS authentication".to_string(),
+            description:
+                "UAVs vulnerable to GPS spoofing attacks due to lack of GPS authentication"
+                    .to_string(),
             severity: VulnSeverity::High,
             cve: None,
             affected_systems: vec!["Most consumer drones".to_string()],

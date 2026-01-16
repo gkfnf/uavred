@@ -1,6 +1,6 @@
+use crate::events::SidebarEvent;
 use gpui::*;
 use gpui_component::label::Label;
-use crate::events::SidebarEvent;
 
 pub struct SimpleSidebar {
     pub is_open: bool,

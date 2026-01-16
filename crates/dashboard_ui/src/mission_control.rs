@@ -225,6 +225,9 @@ fn render_kanban_column(
                         move |this: &mut DashboardPanel, cx: &mut Context<DashboardPanel>, _| {
                             this.select_task(Some(task_id), cx);
                         },
+                        move |this: &mut DashboardPanel, cx: &mut Context<DashboardPanel>, _| {
+                            this.delete_task(task_id, cx);
+                        },
                     )
                 })),
         )

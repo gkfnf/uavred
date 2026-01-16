@@ -78,6 +78,7 @@ pub fn render_task_card<T: 'static>(
     task: &TaskData,
     is_selected: bool,
     on_select: impl Fn(&mut T, &mut Context<T>, usize) + 'static,
+    on_delete: impl Fn(&mut T, &mut Context<T>, usize) + 'static,
 ) -> impl IntoElement {
     let task_id = task.id;
 
@@ -110,12 +111,15 @@ pub fn render_task_card<T: 'static>(
                         )
                 )
                 .child(
-                    // 菜单按钮 - 固定，不会被压缩
-                    Button::new(format!("task-menu-{}", task_id))
+                    // 删除按钮 - 固定，不会被压缩
+                    Button::new(format!("task-delete-{}", task_id))
                         .ghost()
-                        .icon(IconName::Ellipsis)
+                        .icon(IconName::Delete)
                         .xsmall()
                         .flex_none()
+                        .on_click(cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
+                            on_delete(this, cx, task_id);
+                        }))
                 )
         );
     

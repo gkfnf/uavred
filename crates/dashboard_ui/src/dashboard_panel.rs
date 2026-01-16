@@ -103,9 +103,19 @@ impl DashboardPanel {
             store.delete_task(task_id, cx);
         });
 
-        // 清空选中状态
+        // 只有当删除的是当前选中的任务时，才更新选中状态
         if self.selected_task_id == Some(task_id) {
-            self.selected_task_id = None;
+            // 尝试在所有任务列表中找到另一个任务保持面板展开
+            let remaining_task = self.todo_tasks
+                .iter()
+                .chain(self.in_progress_tasks.iter())
+                .chain(self.in_review_tasks.iter())
+                .chain(self.done_tasks.iter())
+                .chain(self.canceled_tasks.iter())
+                .find(|t| t.id != task_id)
+                .map(|t| t.id);
+            
+            self.selected_task_id = remaining_task;
         }
 
         cx.emit(DashboardEvent::TaskRemoved(task_id));

@@ -8,48 +8,71 @@ use gpui_component::{
 };
 
 pub fn render_add_task_dialog(
-    title: &str,
-    description: &str,
+    title: String,
+    description: String,
     auto_start: bool,
+    on_title_change: impl Fn(String) + 'static,
+    on_description_change: impl Fn(String) + 'static,
+    on_auto_start_toggle: impl Fn() + 'static,
+    on_create: impl Fn() + 'static,
+    on_close: impl Fn() + 'static,
 ) -> impl IntoElement {
-    let title_str = title.to_string();
-    let description_str = description.to_string();
-
     v_flex()
         .gap(px(16.0))
         .p(px(24.0))
         .w(px(600.0))
         .bg(rgb(0xffffff))
         .rounded(px(12.0))
-        // 头部
+        // 头部：标题 + 关闭按钮
         .child(
             h_flex()
                 .justify_between()
                 .items_center()
+                .w_full()
                 .child(
-                    Label::new("任务标题")
+                    Label::new("创建新任务")
                         .text_lg()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(rgb(0x1f2937))
                 )
                 .child(
-                    Label::new("")
-                        .text_xs()
+                    Button::new("close-dialog")
+                        .ghost()
+                        .icon(IconName::Close)
+                        .small()
                 )
         )
-        // 标题输入框
+        // 分割线
+        .child(
+            div()
+                .w_full()
+                .h(px(1.0))
+                .bg(rgb(0xe5e7eb))
+        )
+        // 任务标题输入框显示
         .child(
             v_flex()
                 .gap(px(8.0))
+                .w_full()
                 .child(
-                    Label::new("标题（必填）")
-                        .text_sm()
-                        .text_color(rgb(0x6b7280))
+                    h_flex()
+                        .gap(px(4.0))
+                        .child(
+                            Label::new("任务标题")
+                                .text_sm()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(rgb(0x1f2937))
+                        )
+                        .child(
+                            Label::new("*")
+                                .text_sm()
+                                .text_color(rgb(0xef4444))
+                        )
                 )
                 .child(
                     div()
                         .w_full()
-                        .h(px(36.0))
+                        .h(px(40.0))
                         .border(px(1.0))
                         .border_color(rgb(0xd1d5db))
                         .rounded(px(6.0))
@@ -58,90 +81,140 @@ pub fn render_add_task_dialog(
                         .items_center()
                         .bg(rgb(0xfafafa))
                         .child(
-                            Label::new(title_str.clone())
+                            Label::new(if title.is_empty() { "输入任务标题...".to_string() } else { title.clone() })
                                 .text_sm()
                                 .text_color(if title.is_empty() { rgb(0x9ca3af) } else { rgb(0x1f2937) })
                         )
                 )
         )
-        // 描述输入框
+        // 任务描述输入框显示
         .child(
             v_flex()
                 .gap(px(8.0))
+                .w_full()
                 .child(
-                    Label::new("描述（可选）")
+                    Label::new("任务描述")
                         .text_sm()
-                        .text_color(rgb(0x6b7280))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(0x1f2937))
                 )
                 .child(
                     div()
                         .w_full()
-                        .h(px(120.0))
+                        .h(px(100.0))
                         .border(px(1.0))
                         .border_color(rgb(0xd1d5db))
                         .rounded(px(6.0))
                         .p(px(12.0))
                         .bg(rgb(0xfafafa))
                         .child(
-                            Label::new(description_str.clone())
+                            Label::new(if description.is_empty() { "输入任务描述（可选）...".to_string() } else { description.clone() })
                                 .text_sm()
                                 .text_color(if description.is_empty() { rgb(0x9ca3af) } else { rgb(0x1f2937) })
                         )
                 )
         )
-        // 三个下拉菜单占位
+        // 三个下拉菜单占位符（暂不实现功能）
         .child(
-            h_flex()
-                .gap(px(12.0))
+            v_flex()
+                .gap(px(8.0))
                 .w_full()
                 .child(
-                    div()
-                        .flex_1()
-                        .border(px(1.0))
-                        .border_color(rgb(0xd1d5db))
-                        .rounded(px(6.0))
-                        .p(px(12.0))
-                        .bg(rgb(0xfafafa))
-                        .child(Label::new("OPENCODE").text_sm().text_color(rgb(0x6b7280)))
+                    Label::new("配置")
+                        .text_sm()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(0x1f2937))
                 )
                 .child(
-                    div()
-                        .flex_1()
-                        .border(px(1.0))
-                        .border_color(rgb(0xd1d5db))
-                        .rounded(px(6.0))
-                        .p(px(12.0))
-                        .bg(rgb(0xfafafa))
-                        .child(Label::new("DEFAULT").text_sm().text_color(rgb(0x6b7280)))
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .border(px(1.0))
-                        .border_color(rgb(0xd1d5db))
-                        .rounded(px(6.0))
-                        .p(px(12.0))
-                        .bg(rgb(0xfafafa))
-                        .child(Label::new("master").text_sm().text_color(rgb(0x6b7280)))
+                    h_flex()
+                        .gap(px(12.0))
+                        .w_full()
+                        .child(
+                            div()
+                                .flex_1()
+                                .border(px(1.0))
+                                .border_color(rgb(0xd1d5db))
+                                .rounded(px(6.0))
+                                .p(px(12.0))
+                                .bg(rgb(0xfafafa))
+                                .flex()
+                                .items_center()
+                                .justify_between()
+                                .child(
+                                    Label::new("Agent")
+                                        .text_sm()
+                                        .text_color(rgb(0x1f2937))
+                                )
+                                .child(
+                                    Label::new("OPENCODE")
+                                        .text_xs()
+                                        .text_color(rgb(0x6b7280))
+                                )
+                        )
+                        .child(
+                            div()
+                                .flex_1()
+                                .border(px(1.0))
+                                .border_color(rgb(0xd1d5db))
+                                .rounded(px(6.0))
+                                .p(px(12.0))
+                                .bg(rgb(0xfafafa))
+                                .flex()
+                                .items_center()
+                                .justify_between()
+                                .child(
+                                    Label::new("优先级")
+                                        .text_sm()
+                                        .text_color(rgb(0x1f2937))
+                                )
+                                .child(
+                                    Label::new("Medium")
+                                        .text_xs()
+                                        .text_color(rgb(0x6b7280))
+                                )
+                        )
+                        .child(
+                            div()
+                                .flex_1()
+                                .border(px(1.0))
+                                .border_color(rgb(0xd1d5db))
+                                .rounded(px(6.0))
+                                .p(px(12.0))
+                                .bg(rgb(0xfafafa))
+                                .flex()
+                                .items_center()
+                                .justify_between()
+                                .child(
+                                    Label::new("分支")
+                                        .text_sm()
+                                        .text_color(rgb(0x1f2937))
+                                )
+                                .child(
+                                    Label::new("master")
+                                        .text_xs()
+                                        .text_color(rgb(0x6b7280))
+                                )
+                        )
                 )
         )
-        // 底部：图片按钮、开始开关、创建按钮
+        // 分割线
+        .child(
+            div()
+                .w_full()
+                .h(px(1.0))
+                .bg(rgb(0xe5e7eb))
+        )
+        // 底部：开始开关 + 创建/取消按钮
         .child(
             h_flex()
                 .justify_between()
                 .items_center()
                 .w_full()
                 .child(
-                    Button::new("upload-image")
-                        .ghost()
-                        .icon(IconName::File)
-                        .small()
-                )
-                .child(
                     h_flex()
                         .gap(px(12.0))
                         .items_center()
-                        // 开始开关
+                        // 开始开关（toggle）
                         .child(
                             div()
                                 .w(px(44.0))
@@ -162,12 +235,21 @@ pub fn render_add_task_dialog(
                                 )
                         )
                         .child(
-                            Label::new("开始")
+                            Label::new("立即开始")
                                 .text_sm()
                                 .text_color(rgb(0x1f2937))
                         )
+                )
+                .child(
+                    h_flex()
+                        .gap(px(12.0))
                         .child(
-                            Button::new("create-task")
+                            Button::new("cancel-task")
+                                .ghost()
+                                .label("取消")
+                        )
+                        .child(
+                            Button::new("create-task-confirm")
                                 .primary()
                                 .label("创建")
                         )

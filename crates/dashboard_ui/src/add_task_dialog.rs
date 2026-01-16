@@ -1,4 +1,4 @@
-// 添加任务对话框组件
+// 添加任务对话框组件 - 显示表单 UI
 use gpui::*;
 use gpui_component::{
     button::{Button, ButtonVariants as _},
@@ -8,15 +8,13 @@ use gpui_component::{
 };
 
 pub fn render_add_task_dialog(
-    title: String,
-    description: String,
+    title: &str,
+    description: &str,
     auto_start: bool,
-    on_title_change: impl Fn(String) + 'static,
-    on_description_change: impl Fn(String) + 'static,
-    on_auto_start_toggle: impl Fn() + 'static,
-    on_create: impl Fn() + 'static,
-    on_close: impl Fn() + 'static,
 ) -> impl IntoElement {
+    let title_display = if title.is_empty() { "输入任务标题...".to_string() } else { title.to_string() };
+    let desc_display = if description.is_empty() { "输入任务描述...".to_string() } else { description.to_string() };
+    
     v_flex()
         .gap(px(16.0))
         .p(px(24.0))
@@ -49,7 +47,7 @@ pub fn render_add_task_dialog(
                 .h(px(1.0))
                 .bg(rgb(0xe5e7eb))
         )
-        // 任务标题输入框显示
+        // 任务标题输入框
         .child(
             v_flex()
                 .gap(px(8.0))
@@ -77,23 +75,22 @@ pub fn render_add_task_dialog(
                         .border_color(rgb(0xd1d5db))
                         .rounded(px(6.0))
                         .px(px(12.0))
-                        .flex()
-                        .items_center()
+                        .py(px(8.0))
                         .bg(rgb(0xfafafa))
                         .child(
-                            Label::new(if title.is_empty() { "输入任务标题...".to_string() } else { title.clone() })
+                            Label::new(title_display.clone())
                                 .text_sm()
                                 .text_color(if title.is_empty() { rgb(0x9ca3af) } else { rgb(0x1f2937) })
                         )
                 )
         )
-        // 任务描述输入框显示
+        // 任务描述输入框
         .child(
             v_flex()
                 .gap(px(8.0))
                 .w_full()
                 .child(
-                    Label::new("任务描述")
+                    Label::new("任务描述（可选）")
                         .text_sm()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(rgb(0x1f2937))
@@ -108,13 +105,13 @@ pub fn render_add_task_dialog(
                         .p(px(12.0))
                         .bg(rgb(0xfafafa))
                         .child(
-                            Label::new(if description.is_empty() { "输入任务描述（可选）...".to_string() } else { description.clone() })
+                            Label::new(desc_display.clone())
                                 .text_sm()
                                 .text_color(if description.is_empty() { rgb(0x9ca3af) } else { rgb(0x1f2937) })
                         )
                 )
         )
-        // 三个下拉菜单占位符（暂不实现功能）
+        // 三个下拉菜单占位符
         .child(
             v_flex()
                 .gap(px(8.0))

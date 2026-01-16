@@ -181,16 +181,7 @@ impl Render for DashboardPanel {
                         this.close_add_task_dialog(cx);
                     }))
                     .child(
-                        crate::render_add_task_dialog(
-                            title.clone(),
-                            description.clone(),
-                            auto_start,
-                            |_| {}, // on_title_change - 暂时不使用
-                            |_| {}, // on_description_change - 暂时不使用
-                            || {}, // on_auto_start_toggle - 暂时不使用
-                            || {}, // on_create - 暂时不使用
-                            || {}, // on_close - 暂时不使用
-                        )
+                        crate::render_add_task_dialog(&title, &description, auto_start)
                     )
                     .into_any_element()
             } else {

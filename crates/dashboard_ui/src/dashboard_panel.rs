@@ -23,6 +23,12 @@ pub struct DashboardPanel {
     pub canceled_tasks: Vec<TaskData>,
     task_store: Entity<TaskStore>,
     _subscriptions: Vec<Subscription>,
+    // 对话框相关字段
+    pub show_add_task_dialog: bool,
+    pub add_task_title: String,
+    pub add_task_description: String,
+    pub add_task_auto_start: bool,
+    pub add_task_column_status: TaskStatus,
 }
 
 impl EventEmitter<DashboardEvent> for DashboardPanel {}
@@ -43,6 +49,11 @@ impl DashboardPanel {
             canceled_tasks: Vec::new(),
             task_store: task_store.clone(),
             _subscriptions: Vec::new(),
+            show_add_task_dialog: false,
+            add_task_title: String::new(),
+            add_task_description: String::new(),
+            add_task_auto_start: false,
+            add_task_column_status: TaskStatus::Todo,
         };
 
         // 监听 TaskStore 的变化
@@ -119,6 +130,22 @@ impl DashboardPanel {
         }
 
         cx.emit(DashboardEvent::TaskRemoved(task_id));
+    }
+
+    pub fn open_add_task_dialog(&mut self, status: TaskStatus, cx: &mut Context<Self>) {
+        self.show_add_task_dialog = true;
+        self.add_task_column_status = status;
+        self.add_task_title.clear();
+        self.add_task_description.clear();
+        self.add_task_auto_start = false;
+        cx.notify();
+    }
+
+    pub fn close_add_task_dialog(&mut self, cx: &mut Context<Self>) {
+        self.show_add_task_dialog = false;
+        self.add_task_title.clear();
+        self.add_task_description.clear();
+        cx.notify();
     }
 }
 

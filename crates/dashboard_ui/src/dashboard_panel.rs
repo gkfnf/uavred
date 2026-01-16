@@ -151,11 +151,6 @@ impl DashboardPanel {
 
 impl Render for DashboardPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let show_dialog = self.show_add_task_dialog;
-        let title = self.add_task_title.clone();
-        let description = self.add_task_description.clone();
-        let auto_start = self.add_task_auto_start;
-        
         v_flex()
             .size_full()
             .gap(px(0.0))
@@ -167,18 +162,6 @@ impl Render for DashboardPanel {
                 DashboardView::Findings => {
                     render_findings_view(self, window, cx).into_any_element()
                 }
-            })
-            .child(if show_dialog {
-                div()
-                    .flex()
-                    .justify_center()
-                    .items_center()
-                    .child(
-                        crate::render_add_task_dialog(&title, &description, auto_start)
-                    )
-                    .into_any_element()
-            } else {
-                div().into_any_element()
             })
     }
 }

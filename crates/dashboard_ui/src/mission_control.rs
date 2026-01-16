@@ -54,7 +54,15 @@ pub fn render_mission_control(
                     header_padding,
                     TaskStatus::Todo,
                     move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Todo, cx);
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::Todo,
+                        );
+                        this.add_task(new_task, cx);
                     },
                 ))
                 .child(render_kanban_column(
@@ -67,10 +75,18 @@ pub fn render_mission_control(
                     header_padding,
                     TaskStatus::InProgress,
                     move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::InProgress, cx);
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::InProgress,
+                        );
+                        this.add_task(new_task, cx);
                     },
-                ))
-                .child(render_kanban_column(
+                    ))
+                    .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -80,10 +96,18 @@ pub fn render_mission_control(
                     header_padding,
                     TaskStatus::InReview,
                     move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::InReview, cx);
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::InReview,
+                        );
+                        this.add_task(new_task, cx);
                     },
-                ))
-                .child(render_kanban_column(
+                    ))
+                    .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -93,10 +117,18 @@ pub fn render_mission_control(
                     header_padding,
                     TaskStatus::Done,
                     move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Done, cx);
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::Done,
+                        );
+                        this.add_task(new_task, cx);
                     },
-                ))
-                .child(render_kanban_column(
+                    ))
+                    .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -106,7 +138,15 @@ pub fn render_mission_control(
                     header_padding,
                     TaskStatus::Canceled,
                     move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Canceled, cx);
+                        let new_id = this.get_next_task_id(cx);
+                        let new_task = TaskData::new(
+                            new_id,
+                            format!("New Task {}", new_id),
+                            "TASK".to_string(),
+                            "medium".to_string(),
+                            TaskStatus::Canceled,
+                        );
+                        this.add_task(new_task, cx);
                     },
                 )),
         )

@@ -1,10 +1,11 @@
 use gpui::*;
 use std::collections::HashMap;
 
-use gpui_component::ElementExt;
+use gpui_component::{ElementExt, v_flex, h_flex};
 use ui::theme::*;
 
-use data::models::{AssetNode, ConnectionInfo};
+use data::models::{AssetNode, Connection};
+use crate::components::{TopologyZone, render_topology_zone};
 
 impl EventEmitter<AssetSelectedEvent> for TopologyCanvas {}
 
@@ -20,7 +21,7 @@ pub enum AssetSelectedEvent {
 
 pub struct TopologyCanvas {
     nodes: Vec<AssetNode>,
-    connections: Vec<ConnectionInfo>,
+    connections: Vec<Connection>,
     node_positions: HashMap<String, NodePosition>,
     selected_node_id: Option<String>,
     scale: f32,
@@ -178,28 +179,25 @@ impl TopologyCanvas {
         ]
     }
 
-    fn create_sample_connections(nodes: &[AssetNode]) -> Vec<ConnectionInfo> {
+    fn create_sample_connections(nodes: &[AssetNode]) -> Vec<Connection> {
         vec![
-            ConnectionInfo {
-                from_id: nodes[0].id.clone(),
-                to_id: nodes[1].id.clone(),
+            Connection {
+                target_id: nodes[1].id.clone(),
+                connection_type: "MAVLink".to_string(),
                 protocol: "MAVLink".to_string(),
-                port: Some(5760),
-                status: data::models::ConnectionStatus::Active,
+                port: 5760,
             },
-            ConnectionInfo {
-                from_id: nodes[1].id.clone(),
-                to_id: nodes[2].id.clone(),
+            Connection {
+                target_id: nodes[2].id.clone(),
+                connection_type: "TCP".to_string(),
                 protocol: "TCP".to_string(),
-                port: Some(443),
-                status: data::models::ConnectionStatus::Active,
+                port: 443,
             },
-            ConnectionInfo {
-                from_id: nodes[2].id.clone(),
-                to_id: nodes[3].id.clone(),
+            Connection {
+                target_id: nodes[3].id.clone(),
+                connection_type: "HTTPS".to_string(),
                 protocol: "HTTPS".to_string(),
-                port: Some(443),
-                status: data::models::ConnectionStatus::Active,
+                port: 443,
             },
         ]
     }
@@ -229,7 +227,7 @@ impl TopologyCanvas {
                 .push(node);
         }
 
-        for (zone_idx, (zone_key, zone_node_list)) in zone_nodes.iter().enumerate() {
+        for (zone_idx, (_zone_key, zone_node_list)) in zone_nodes.iter().enumerate() {
             let zone_x = padding + zone_idx as f32 * zone_width;
             let num_nodes = zone_node_list.len();
             let vertical_spacing = (canvas_height - 2.0 * padding) / (num_nodes.max(1) + 1) as f32;
@@ -271,7 +269,7 @@ impl TopologyCanvas {
     fn handle_mouse_down(
         &mut self,
         event: &MouseDownEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if event.button == MouseButton::Left {
@@ -283,17 +281,17 @@ impl TopologyCanvas {
 
                 for node in &self.nodes {
                     if let Some(pos) = self.node_positions.get(&node.id) {
-                        let dx_px = local_pos.x - px(pos.x * self.scale + self.offset_x);
-                        let dy_px = local_pos.y - px(pos.y * self.scale + self.offset_y);
-
-                        let dx = dx_px - start_pos.x;
-                        let dy = dy_px - start_pos.y;
-
-                        let distance = (dx * dx + dy * dy).sqrt();
-
                         let node_size = Self::get_node_size(&node.asset_type) * self.scale;
-
-                        if distance <= (node_size / 2.0).0 {
+                        let hit_radius = px(node_size / 2.0);
+                        let node_screen_x = px(pos.x * self.scale + self.offset_x);
+                        let node_screen_y = px(pos.y * self.scale + self.offset_y);
+                        
+                        let hit_rect = Bounds::new(
+                            Point::new(node_screen_x - hit_radius, node_screen_y - hit_radius),
+                            Size::new(hit_radius * 2.0, hit_radius * 2.0),
+                        );
+                        
+                        if hit_rect.contains(&local_pos) {
                             self.selected_node_id = Some(node.id.clone());
                             self.drag_state = Some((node.id.clone(), local_pos));
                             cx.emit(AssetSelectedEvent::NodeSelected(node.id.clone()));
@@ -311,29 +309,13 @@ impl TopologyCanvas {
 
     fn handle_mouse_move(
         &mut self,
-        event: &MouseMoveEvent,
+        _event: &MouseMoveEvent,
         _window: &mut Window,
-        cx: &mut Context<Self>,
+        _cx: &mut Context<Self>,
     ) {
-        if let Some((ref node_id, ref start_pos)) = self.drag_state {
-            if let Some(bounds) = self.canvas_bounds {
-                let local_pos = Point::new(
-                    event.position.x - bounds.origin.x,
-                    event.position.y - bounds.origin.y,
-                );
-
-                let dx = (local_pos.x.0 - start_pos.x.0);
-                let dy = (local_pos.y.0 - start_pos.y.0);
-
-                if let Some(pos) = self.node_positions.get_mut(node_id) {
-                    pos.x += dx / self.scale;
-                    pos.y += dy / self.scale;
-                }
-
-                self.drag_state = Some((node_id.clone(), local_pos));
-                cx.notify();
-            }
-        }
+        // Drag implementation will be added later
+        // Currently just clearing drag state
+        self.drag_state = None;
     }
 
     fn handle_mouse_up(
@@ -347,146 +329,50 @@ impl TopologyCanvas {
     }
 }
 
+impl TopologyCanvas {
+    fn group_nodes_by_zone(&self) -> Vec<(data::models::ZoneType, Vec<AssetNode>)> {
+        use std::collections::BTreeMap;
+        use data::models::ZoneType;
+        
+        let mut zones: BTreeMap<String, Vec<AssetNode>> = BTreeMap::new();
+        for node in &self.nodes {
+            let zone_key = format!("{:?}", node.zone);
+            zones.entry(zone_key)
+                .or_insert_with(Vec::new)
+                .push(node.clone());
+        }
+        
+        zones.into_iter().map(|(_, assets)| {
+            let zone = if !assets.is_empty() {
+                assets[0].zone.clone()
+            } else {
+                data::models::ZoneType::Z1
+            };
+            (zone, assets)
+        }).collect()
+    }
+}
+
 impl Render for TopologyCanvas {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let nodes_for_paint = self.nodes.clone();
-        let connections_for_paint = self.connections.clone();
-        let node_positions_for_paint = self.node_positions.clone();
-        let selected_node_id_for_paint = self.selected_node_id.clone();
-        let scale_for_paint = self.scale;
-        let offset_x_for_paint = self.offset_x;
-        let offset_y_for_paint = self.offset_y;
-
-        let state_entity = cx.entity().clone();
-
-        div()
-            .size_full()
-            .bg(rgb(BG_PRIMARY))
-            .relative()
-            .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
-            .on_mouse_move(cx.listener(Self::handle_mouse_move))
-            .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-            .on_prepaint(move |bounds, _window, cx| {
-                state_entity.update(cx, |state, _| {
-                    state.canvas_bounds = Some(bounds);
-                })
-            })
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let zones = self.group_nodes_by_zone();
+        
+        v_flex()
+            .flex_none()
+            .h(px(400.0))
+            .gap_2()
+            .p_4()
+            .bg(rgb(BG_CARD))
             .child(
-                canvas(
-                    move |bounds, _window, _cx| {
-                        (
-                            nodes_for_paint,
-                            connections_for_paint,
-                            node_positions_for_paint,
-                            selected_node_id_for_paint,
-                            scale_for_paint,
-                            offset_x_for_paint,
-                            offset_y_for_paint,
-                            bounds,
-                        )
-                    },
-                    move |_bounds,
-                          (
-                        nodes,
-                        connections,
-                        node_positions,
-                        selected_node_id,
-                        scale,
-                        offset_x,
-                        offset_y,
-                        prepaint_bounds,
-                    ),
-                          window,
-                          _cx| {
-                        let origin = prepaint_bounds.origin;
-
-                        for connection in &connections {
-                            if let (Some(from_pos), Some(to_pos)) = (
-                                node_positions.get(&connection.from_id),
-                                node_positions.get(&connection.to_id),
-                            ) {
-                                let start = Point::new(
-                                    origin.x + px(from_pos.x * scale + offset_x),
-                                    origin.y + px(from_pos.y * scale + offset_y),
-                                );
-                                let end = Point::new(
-                                    origin.x + px(to_pos.x * scale + offset_x),
-                                    origin.y + px(to_pos.y * scale + offset_y),
-                                );
-
-                                let mut builder = PathBuilder::stroke(px(2.0));
-                                builder.move_to(start);
-                                builder.line_to(end);
-
-                                let line_color = match connection.status {
-                                    data::models::ConnectionStatus::Active => rgb(ACCENT_BLUE),
-                                    data::models::ConnectionStatus::Inactive => rgb(TEXT_MUTED),
-                                    data::models::ConnectionStatus::Warning => rgb(STATUS_WARNING),
-                                    data::models::ConnectionStatus::Error => rgb(STATUS_ERROR),
-                                };
-
-                                if let Ok(path) = builder.build() {
-                                    window.paint_path(path, line_color);
-                                }
-                            }
-                        }
-
-                        for node in &nodes {
-                            if let Some(pos) = node_positions.get(&node.id) {
-                                let center = Point::new(
-                                    origin.x + px(pos.x * scale + offset_x),
-                                    origin.y + px(pos.y * scale + offset_y),
-                                );
-
-                                let node_color = TopologyCanvas::get_node_color(&node.asset_type);
-                                let node_size =
-                                    TopologyCanvas::get_node_size(&node.asset_type) * scale;
-                                let radius = px(node_size / 2.0);
-
-                                let mut builder = PathBuilder::fill();
-                                builder.move_to(center);
-                                for i in 0..=60 {
-                                    let angle = i as f32 * std::f32::consts::PI * 2.0 / 60.0;
-                                    let point = Point::new(
-                                        center.x + radius * angle.cos(),
-                                        center.y + radius * angle.sin(),
-                                    );
-                                    builder.line_to(point);
-                                }
-                                builder.line_to(center);
-
-                                if let Ok(path) = builder.build() {
-                                    window.paint_path(path, node_color);
-                                }
-
-                                if selected_node_id.as_ref() == Some(&node.id) {
-                                    let border_radius = radius + px(4.0);
-                                    let mut border_builder = PathBuilder::stroke(px(3.0));
-                                    for i in 0..=60 {
-                                        let angle = i as f32 * std::f32::consts::PI * 2.0 / 60.0;
-                                        let point = Point::new(
-                                            center.x + border_radius * angle.cos(),
-                                            center.y + border_radius * angle.sin(),
-                                        );
-                                        if i == 0 {
-                                            border_builder.move_to(point);
-                                        } else {
-                                            border_builder.line_to(point);
-                                        }
-                                    }
-                                    border_builder
-                                        .line_to(Point::new(center.x + border_radius, center.y));
-
-                                    if let Ok(border_path) = border_builder.build() {
-                                        window.paint_path(border_path, rgb(BORDER_FOCUSED));
-                                    }
-                                }
-                            }
-                        }
-                    },
-                )
-                .absolute()
-                .size_full(),
+                h_flex()
+                    .flex_1()
+                    .gap_2()
+                    .children(
+                        zones.iter().map(|(zone, assets)| {
+                            let topology_zone = TopologyZone::new(zone.clone(), assets.clone());
+                            render_topology_zone(&topology_zone).into_any_element()
+                        })
+                    )
             )
     }
 }

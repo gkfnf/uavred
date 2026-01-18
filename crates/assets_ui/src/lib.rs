@@ -33,10 +33,20 @@ impl AssetsPanel {
             selected_asset: None,
         }
     }
+
+    fn toggle_topology(&mut self, cx: &mut Context<Self>) {
+        self.topology_expanded = !self.topology_expanded;
+        cx.notify();
+    }
+
+    fn toggle_details(&mut self, cx: &mut Context<Self>) {
+        self.details_expanded = !self.details_expanded;
+        cx.notify();
+    }
 }
 
 impl Render for AssetsPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         v_flex()
             .size_full()
             .gap_0()
@@ -55,6 +65,10 @@ impl Render for AssetsPanel {
                             .p_3()
                             .items_center()
                             .bg(rgb(BG_PRIMARY))
+                            .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
+                                this.toggle_topology(cx);
+                            }))
+                            .cursor_pointer()
                             .child(
                                 if self.topology_expanded {
                                     IconName::ChevronDown
@@ -89,6 +103,10 @@ impl Render for AssetsPanel {
                             .p_3()
                             .items_center()
                             .bg(rgb(BG_PRIMARY))
+                            .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
+                                this.toggle_details(cx);
+                            }))
+                            .cursor_pointer()
                             .child(
                                 if self.details_expanded {
                                     IconName::ChevronDown

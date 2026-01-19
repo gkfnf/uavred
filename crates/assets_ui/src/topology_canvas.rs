@@ -30,23 +30,23 @@ pub struct ZoneLayout {
     pub asset_ids: Vec<String>,    // 该分区的资产 ID 列表
 }
 
-/// 连接线样式
-#[derive(Clone, Debug)]
-pub struct ConnectionStyle {
-    pub color: Rgba,
-    pub is_dashed: bool,
-    pub width: f32,
-}
-
-impl Default for ConnectionStyle {
-    fn default() -> Self {
-        Self {
-            color: rgb(0xb0bec5),  // 灰色
-            is_dashed: true,
-            width: 1.5,
-        }
-    }
-}
+// /// 连接线样式 (Reserved for future use when implementing status-based colors)
+// #[derive(Clone, Debug)]
+// pub struct ConnectionStyle {
+//     pub color: Rgba,
+//     pub is_dashed: bool,
+//     pub width: f32,
+// }
+// 
+// impl Default for ConnectionStyle {
+//     fn default() -> Self {
+//         Self {
+//             color: rgb(0xb0bec5),  // 灰色
+//             is_dashed: true,
+//             width: 1.5,
+//         }
+//     }
+// }
 
 pub enum AssetSelectedEvent {
     NodeSelected(String),
@@ -54,8 +54,7 @@ pub enum AssetSelectedEvent {
 
 pub struct TopologyCanvas {
     // 数据
-    nodes: Vec<AssetNode>,
-    connections: Vec<Connection>,
+    pub nodes: Vec<AssetNode>,
     
     // 布局数据
     zones_layout: Vec<ZoneLayout>,  // 5 个分区的布局信息
@@ -63,41 +62,31 @@ pub struct TopologyCanvas {
     
     // 交互状态
     selected_node_id: Option<String>,
-    hovered_node_id: Option<String>,
     
     // 画布状态
     canvas_bounds: Option<Bounds<Pixels>>,
     
-    // 显示参数
+    // 显示参数 (kept for future pan/zoom implementation)
     scale: f32,
     offset_x: f32,
     offset_y: f32,
     drag_state: Option<(String, Point<Pixels>)>,
-    zoom_level: f32,
-    pan_x: f32,
-    pan_y: f32,
 }
 
 impl TopologyCanvas {
     pub fn new(_cx: &mut Context<Self>) -> Self {
         let nodes = Self::create_sample_nodes();
-        let connections = Self::create_sample_connections(&nodes);
-        let zones_layout = Self::create_zones_layout();  // 新增
+        let zones_layout = Self::create_zones_layout();
         let mut canvas = Self {
             nodes,
-            connections,
             zones_layout,
             node_positions: HashMap::new(),
             selected_node_id: None,
-            hovered_node_id: None,
             canvas_bounds: None,
             scale: 1.0,
             offset_x: 0.0,
             offset_y: 0.0,
             drag_state: None,
-            zoom_level: 1.0,
-            pan_x: 0.0,
-            pan_y: 0.0,
         };
         
         // 初始布局计算 (使用默认 canvas 宽度)
@@ -234,6 +223,7 @@ impl TopologyCanvas {
         ]
     }
 
+    #[allow(dead_code)]
     fn create_sample_connections(nodes: &[AssetNode]) -> Vec<Connection> {
         vec![
             Connection {
@@ -407,6 +397,7 @@ impl TopologyCanvas {
         NodePosition { x, y }
     }
 
+    #[allow(dead_code)]
     fn calculate_node_positions(nodes: &[AssetNode]) -> HashMap<String, NodePosition> {
         let mut positions = HashMap::new();
         let canvas_width = 800.0;
@@ -451,6 +442,7 @@ impl TopologyCanvas {
         positions
     }
 
+    #[allow(dead_code)]
     fn get_node_color(asset_type: &str) -> Rgba {
         match asset_type {
             "UAV" => rgb(0x2563eb),
@@ -512,23 +504,28 @@ impl TopologyCanvas {
         }
     }
 
+    #[allow(dead_code)]
     fn handle_mouse_move(
         &mut self,
         _event: &MouseMoveEvent,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
-        // Drag implementation will be added later
-        // Currently just clearing drag state
+        // TODO: Phase 2 - Implement drag-drop
+        // Required: Calculate delta between start_pos and current pos
+        // Update node_positions HashMap
+        // Notify for re-render
         self.drag_state = None;
     }
 
+    #[allow(dead_code)]
     fn handle_mouse_up(
         &mut self,
         _event: &MouseUpEvent,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // TODO: Phase 2 - Finalize drop position
         self.drag_state = None;
         cx.notify();
     }

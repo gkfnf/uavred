@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{label::Label, v_flex, h_flex, ElementExt, IconName};
+use gpui_component::{label::Label, v_flex, h_flex, IconName};
 use ui::theme::*;
 use data::models::{ZoneType, AssetNode};
 

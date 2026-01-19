@@ -559,25 +559,49 @@ impl TopologyCanvas {
 }
 
 impl Render for TopologyCanvas {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let zones = self.group_nodes_by_zone();
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // 初次渲染时计算布局
+        if self.node_positions.is_empty() && !self.nodes.is_empty() {
+            self.calculate_layout(800.0, 600.0);
+        }
+
+        let zones = self.zones_layout.clone();
         
         v_flex()
-            .flex_none()
-            .h(px(400.0))
-            .gap_2()
-            .p_4()
+            .flex_1()
             .bg(rgb(BG_CARD))
+            .size_full()
+            .gap_0()
+            .overflow_hidden()
             .child(
+                // 5 个分区列
                 h_flex()
                     .flex_1()
-                    .gap_2()
+                    .gap_1()
+                    .p_4()
                     .children(
-                        zones.iter().map(|(zone, assets)| {
-                            let topology_zone = TopologyZone::new(zone.clone(), assets.clone());
-                            render_topology_zone(&topology_zone).into_any_element()
+                        zones.iter().map(|zone_layout| {
+                            let zone_assets: Vec<AssetNode> = self.nodes
+                                .iter()
+                                .filter(|n| n.zone == zone_layout.zone)
+                                .cloned()
+                                .collect();
+                            
+                            let zone = TopologyZone::new(
+                                zone_layout.zone.clone(),
+                                zone_assets,
+                                zone_layout.name.clone(),
+                                zone_layout.description.clone(),
+                                zone_layout.bg_color,
+                                zone_layout.icon.clone(),
+                            );
+                            
+                            render_topology_zone(&zone).into_any_element()
                         })
                     )
             )
+            .on_mouse_down(MouseButton::Left, cx.listener(|this, event, window, cx| {
+                this.handle_mouse_down(event, window, cx);
+            }))
     }
 }

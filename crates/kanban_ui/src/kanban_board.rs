@@ -92,13 +92,13 @@ impl Render for KanbanBoard {
                     .children(all_statuses.into_iter().map(|status| {
                         let tasks = self.tasks_by_status(status);
                         let selected = self.selected_task_id;
-                        KanbanColumn::new(status).tasks(tasks).selected_task_id(selected)
+                        KanbanColumn::new(status)
+                            .tasks(tasks)
+                            .selected_task_id(selected)
                     })),
             )
             .when_some(self.get_selected_task(), |this, _task| {
-                this.when(self.detail_panel_visible, |this| {
-                    this.child(div())
-                })
+                this.when(self.detail_panel_visible, |this| this.child(div()))
             })
     }
 }

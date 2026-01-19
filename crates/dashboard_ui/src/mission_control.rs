@@ -53,8 +53,8 @@ pub fn render_mission_control(
                     0,
                     header_padding,
                     TaskStatus::Todo,
-                    move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Todo, cx);
+                    move |this, window, cx, _idx| {
+                        this.open_add_task_dialog(TaskStatus::Todo, window, cx);
                     },
                 ))
                 .child(render_kanban_column(
@@ -66,11 +66,11 @@ pub fn render_mission_control(
                     1,
                     header_padding,
                     TaskStatus::InProgress,
-                    move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::InProgress, cx);
+                    move |this, window, cx, _idx| {
+                        this.open_add_task_dialog(TaskStatus::InProgress, window, cx);
                     },
-                    ))
-                    .child(render_kanban_column(
+                ))
+                .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -79,11 +79,11 @@ pub fn render_mission_control(
                     2,
                     header_padding,
                     TaskStatus::InReview,
-                    move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::InReview, cx);
+                    move |this, window, cx, _idx| {
+                        this.open_add_task_dialog(TaskStatus::InReview, window, cx);
                     },
-                    ))
-                    .child(render_kanban_column(
+                ))
+                .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -92,11 +92,11 @@ pub fn render_mission_control(
                     3,
                     header_padding,
                     TaskStatus::Done,
-                    move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Done, cx);
+                    move |this, window, cx, _idx| {
+                        this.open_add_task_dialog(TaskStatus::Done, window, cx);
                     },
-                    ))
-                    .child(render_kanban_column(
+                ))
+                .child(render_kanban_column(
                     panel,
                     window,
                     cx,
@@ -105,10 +105,10 @@ pub fn render_mission_control(
                     4,
                     header_padding,
                     TaskStatus::Canceled,
-                    move |this, _window, cx, _idx| {
-                        this.open_add_task_dialog(TaskStatus::Canceled, cx);
+                    move |this, window, cx, _idx| {
+                        this.open_add_task_dialog(TaskStatus::Canceled, window, cx);
                     },
-                    )),
+                )),
         )
         .child(
             // 右侧：详情面板（当选中任务时显示）
@@ -188,6 +188,10 @@ fn render_kanban_column(
                         move |this: &mut DashboardPanel, cx: &mut Context<DashboardPanel>, _| {
                             this.delete_task(task_id, cx);
                         },
+                        Some(move |this: &mut DashboardPanel, cx: &mut Context<DashboardPanel>, _| {
+                            eprintln!("DEBUG: Start button clicked for task {}", task_id);
+                            this.start_task(task_id, cx);
+                        }),
                     )
                 })),
         )

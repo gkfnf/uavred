@@ -65,6 +65,7 @@ impl TasksDatabase {
             tasks.push(TaskData {
                 id: id as usize,
                 title,
+                description: String::new(),
                 task_type,
                 priority,
                 status,

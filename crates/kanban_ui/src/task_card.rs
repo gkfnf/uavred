@@ -174,7 +174,8 @@ impl RenderOnce for TaskCard {
             })
         };
 
-        let card_element = card.on_drag(drag_task, |drag, _, _, cx| cx.new(|_| drag.clone()))
+        let card_element = card
+            .on_drag(drag_task, |drag, _, _, cx| cx.new(|_| drag.clone()))
             .context_menu({
                 move |menu, window, cx| {
                     menu.when_some(on_edit.clone(), |this, handler| {
@@ -264,8 +265,8 @@ impl RenderOnce for TaskCard {
                             .text_color(rgb(0xffffff))
                             .child(self.task.priority.clone()),
                     ),
-                    );
-                    
-                    card_element
-                    }
-                    }
+            );
+
+        card_element
+    }
+}

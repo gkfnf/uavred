@@ -1,8 +1,8 @@
+use data::init_task_store;
 use gpui::*;
 use gpui_component::Root;
 use gpui_component_assets::Assets;
 use uavred::Workspace;
-use data::init_task_store;
 
 fn main() {
     tracing_subscriber::fmt()

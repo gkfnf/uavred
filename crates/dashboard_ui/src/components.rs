@@ -9,7 +9,7 @@ use gpui_component::{
     v_flex, IconName, Sizable,
 };
 
-use data::TaskData;
+use data::{TaskData, TaskStatus};
 
 /// Kanban 列标题
 pub fn render_kanban_column_header<T: 'static>(
@@ -21,7 +21,7 @@ pub fn render_kanban_column_header<T: 'static>(
     on_add: impl Fn(&mut T, &mut Window, &mut Context<T>, usize) + 'static,
 ) -> impl IntoElement {
     let title_str = title.to_string();
-    
+
     // 根据列的状态选择指示器颜色
     let indicator_color = match column_index {
         0 => rgb(0x374151), // To Do: Dark Grey
@@ -48,7 +48,13 @@ pub fn render_kanban_column_header<T: 'static>(
             h_flex()
                 .gap(px(6.0))
                 .items_center()
-                .child(div().w(px(6.0)).h(px(6.0)).rounded_full().bg(indicator_color))
+                .child(
+                    div()
+                        .w(px(6.0))
+                        .h(px(6.0))
+                        .rounded_full()
+                        .bg(indicator_color),
+                )
                 .child(
                     Label::new(title_str)
                         .text_sm()
@@ -79,8 +85,10 @@ pub fn render_task_card<T: 'static>(
     is_selected: bool,
     on_select: impl Fn(&mut T, &mut Context<T>, usize) + 'static,
     on_delete: impl Fn(&mut T, &mut Context<T>, usize) + 'static,
+    on_start: Option<impl Fn(&mut T, &mut Context<T>, usize) + 'static>,
 ) -> impl IntoElement {
     let task_id = task.id;
+    let task_status = task.status;
 
     let mut card = div()
         .bg(rgb(0xffffff))
@@ -101,14 +109,12 @@ pub fn render_task_card<T: 'static>(
                 .gap(px(6.0))
                 .child(
                     // 标题 - 允许换行，自动调整高度
-                    div()
-                        .flex_1()
-                        .child(
-                            Label::new(&task.title)
-                                .text_sm()
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(rgb(0x1f2937))
-                        )
+                    div().flex_1().child(
+                        Label::new(&task.title)
+                            .text_sm()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(rgb(0x1f2937)),
+                    ),
                 )
                 .child(
                     // 删除按钮 - 固定，不会被压缩
@@ -119,22 +125,36 @@ pub fn render_task_card<T: 'static>(
                         .flex_none()
                         .on_click(cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
                             on_delete(this, cx, task_id);
-                        }))
-                )
+                        })),
+                ),
         );
-    
+
     // 如果有任务类型，显示它
     if !task.task_type.is_empty() && task.task_type != "TASK" {
         card = card.child(
             Label::new(&task.task_type)
                 .text_xs()
-                .text_color(rgb(0x6b7280))
+                .text_color(rgb(0x6b7280)),
         );
     }
-    
+
     // 如果选中，更新边框
     if is_selected {
         card = card.border_color(rgb(0x3b82f6)).border(px(2.0));
+    }
+
+    // 如果是 Todo 状态且有启动回调，添加启动按钮
+    if task_status == TaskStatus::Todo && on_start.is_some() {
+        card = card.child(
+            Button::new(format!("task-start-{}", task_id))
+                .label("启动")
+                .small()
+                .on_click(cx.listener(move |this: &mut T, _, _, cx: &mut Context<T>| {
+                    if let Some(ref on_start) = on_start {
+                        on_start(this, cx, task_id);
+                    }
+                })),
+        );
     }
 
     // 卡片容器 - 可点击选择，自适应大小

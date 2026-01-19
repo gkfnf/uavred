@@ -1,13 +1,15 @@
 // Dashboard 面板 Entity - 类似 zed 的 Pane
 
+use crate::add_task_modal::AddTaskModal;
 use crate::findings::render_findings_view;
 use crate::mission_control::render_mission_control;
 use data::{TaskData, TaskStatus, TaskStore};
 use gpui::EventEmitter;
 use gpui::*;
 use gpui_component::{
+    Selectable, Sizable, WindowExt,
     button::{Button, ButtonVariants as _},
-    h_flex, v_flex, Selectable, Sizable,
+    h_flex, v_flex,
 };
 use ui::events::DashboardEvent;
 use workspace::DashboardView;
@@ -23,12 +25,6 @@ pub struct DashboardPanel {
     pub canceled_tasks: Vec<TaskData>,
     task_store: Entity<TaskStore>,
     _subscriptions: Vec<Subscription>,
-    // 对话框相关字段
-    pub show_add_task_dialog: bool,
-    pub add_task_title: String,
-    pub add_task_description: String,
-    pub add_task_auto_start: bool,
-    pub add_task_column_status: TaskStatus,
 }
 
 impl EventEmitter<DashboardEvent> for DashboardPanel {}
@@ -49,24 +45,24 @@ impl DashboardPanel {
             canceled_tasks: Vec::new(),
             task_store: task_store.clone(),
             _subscriptions: Vec::new(),
-            show_add_task_dialog: false,
-            add_task_title: String::new(),
-            add_task_description: String::new(),
-            add_task_auto_start: false,
-            add_task_column_status: TaskStatus::Todo,
         };
 
         // 监听 TaskStore 的变化
         panel
             ._subscriptions
-            .push(cx.observe(&task_store, |this, _store, cx| {
+            .push(cx.subscribe(&task_store, |this, _store, _event, cx| {
+                eprintln!("\n=== TaskStore subscription TRIGGERED ===");
                 // 从 this.task_store 读取最新数据
                 this.todo_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Todo);
+                eprintln!("Todo tasks: {}", this.todo_tasks.len());
                 this.in_progress_tasks = this.task_store.read(cx).get_tasks(TaskStatus::InProgress);
+                eprintln!("InProgress tasks: {}", this.in_progress_tasks.len());
                 this.in_review_tasks = this.task_store.read(cx).get_tasks(TaskStatus::InReview);
                 this.done_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Done);
                 this.canceled_tasks = this.task_store.read(cx).get_tasks(TaskStatus::Canceled);
+                eprintln!("Calling cx.notify()");
                 cx.notify();
+                eprintln!("=== TaskStore subscription END ===\n");
             }));
 
         // 初始化任务列表
@@ -117,7 +113,8 @@ impl DashboardPanel {
         // 只有当删除的是当前选中的任务时，才更新选中状态
         if self.selected_task_id == Some(task_id) {
             // 尝试在所有任务列表中找到另一个任务保持面板展开
-            let remaining_task = self.todo_tasks
+            let remaining_task = self
+                .todo_tasks
                 .iter()
                 .chain(self.in_progress_tasks.iter())
                 .chain(self.in_review_tasks.iter())
@@ -125,37 +122,102 @@ impl DashboardPanel {
                 .chain(self.canceled_tasks.iter())
                 .find(|t| t.id != task_id)
                 .map(|t| t.id);
-            
+
             self.selected_task_id = remaining_task;
         }
 
         cx.emit(DashboardEvent::TaskRemoved(task_id));
     }
 
-    pub fn open_add_task_dialog(&mut self, status: TaskStatus, cx: &mut Context<Self>) {
-        self.show_add_task_dialog = true;
-        self.add_task_column_status = status;
-        self.add_task_title.clear();
-        self.add_task_description.clear();
-        self.add_task_auto_start = false;
-        cx.notify();
+    pub fn start_task(&mut self, task_id: usize, cx: &mut Context<Self>) {
+        eprintln!("DEBUG: start_task called for id={}", task_id);
+        // 从所有任务列表中找到该任务
+        if let Some(task) = self
+            .todo_tasks
+            .iter_mut()
+            .find(|t| t.id == task_id)
+        {
+            eprintln!("DEBUG: Found task in todo_tasks, changing status to InProgress");
+            task.status = TaskStatus::InProgress;
+            
+            let mut updated_task = task.clone();
+            let task_store = self.task_store.clone();
+            
+            // 更新数据库中的任务状态
+            task_store.update(cx, |store, cx| {
+                eprintln!("DEBUG: Calling store.update_task with id={}", updated_task.id);
+                store.update_task(updated_task.clone(), cx);
+            });
+        }
     }
 
-    pub fn close_add_task_dialog(&mut self, cx: &mut Context<Self>) {
-        self.show_add_task_dialog = false;
-        self.add_task_title.clear();
-        self.add_task_description.clear();
-        cx.notify();
+    pub fn open_add_task_dialog(
+        &mut self,
+        status: TaskStatus,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        // 创建表单实体 - InputState 必须在持久 Entity 中创建
+        let modal = cx.new(|cx| AddTaskModal::new(window, cx, status));
+
+        let this_handle = cx.entity().downgrade();
+        
+        window.open_dialog(cx, move |dialog, _window, _cx| {
+            let modal_clone = modal.clone();
+            dialog
+                .title("创建新任务")
+                .w(px(600.0))
+                .child(modal.clone())
+                .confirm()
+                .on_ok({
+                    let modal = modal_clone;
+                    let this_handle = this_handle.clone();
+                    move |_event, _window, cx| {
+                        eprintln!("DEBUG: Dialog on_ok triggered");
+                        let title = modal.read(cx).get_title(cx);
+                        eprintln!("DEBUG: Title={}", title);
+                        
+                        if !title.is_empty() {
+                            let description = modal.read(cx).get_description(cx);
+                            let is_auto_start = modal.read(cx).is_auto_start();
+                            eprintln!("DEBUG: Description={}, auto_start={}", description, is_auto_start);
+                            
+                            let task_status = if is_auto_start {
+                                TaskStatus::InProgress
+                            } else {
+                                TaskStatus::Todo
+                            };
+                            
+                            if let Some(handle) = this_handle.upgrade() {
+                                eprintln!("DEBUG: handle upgraded");
+                                handle.update(cx, |this, cx| {
+                                    eprintln!("DEBUG: inside handle.update");
+                                    let task_id = this.get_next_task_id(cx);
+                                    eprintln!("DEBUG: task_id={}", task_id);
+                                    let task = TaskData {
+                                        id: task_id,
+                                        title,
+                                        description,
+                                        task_type: String::from("task"),
+                                        priority: String::from("Medium"),
+                                        status: task_status,
+                                    };
+                                    eprintln!("DEBUG: calling add_task");
+                                    this.add_task(task, cx);
+                                });
+                            } else {
+                                eprintln!("DEBUG: handle upgrade failed");
+                            }
+                        }
+                        true
+                    }
+                })
+        });
     }
 }
 
 impl Render for DashboardPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let show_dialog = self.show_add_task_dialog;
-        let title = self.add_task_title.clone();
-        let description = self.add_task_description.clone();
-        let auto_start = self.add_task_auto_start;
-        
         v_flex()
             .size_full()
             .gap(px(0.0))
@@ -167,25 +229,6 @@ impl Render for DashboardPanel {
                 DashboardView::Findings => {
                     render_findings_view(self, window, cx).into_any_element()
                 }
-            })
-            .child(if show_dialog {
-                div()
-                    .absolute()
-                    .inset(px(0.0))
-                    .bg(rgb(0x000000))
-                    .flex()
-                    .justify_center()
-                    .items_center()
-                    .pt(px(80.0))
-                    .on_mouse_down(MouseButton::Left, cx.listener(move |this: &mut Self, _, _, cx| {
-                        this.close_add_task_dialog(cx);
-                    }))
-                    .child(
-                        crate::render_add_task_dialog(&title, &description, auto_start)
-                    )
-                    .into_any_element()
-            } else {
-                div().into_any_element()
             })
     }
 }
@@ -228,3 +271,4 @@ impl DashboardPanel {
             .child(div().flex_1())
     }
 }
+

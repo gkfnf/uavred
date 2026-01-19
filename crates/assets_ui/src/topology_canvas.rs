@@ -1,7 +1,7 @@
 use gpui::*;
 use std::collections::HashMap;
 
-use gpui_component::{ElementExt, v_flex, h_flex};
+use gpui_component::{v_flex, h_flex};
 use ui::theme::*;
 
 use data::models::{AssetNode, Connection};
@@ -534,29 +534,7 @@ impl TopologyCanvas {
     }
 }
 
-impl TopologyCanvas {
-    fn group_nodes_by_zone(&self) -> Vec<(data::models::ZoneType, Vec<AssetNode>)> {
-        use std::collections::BTreeMap;
-        use data::models::ZoneType;
-        
-        let mut zones: BTreeMap<String, Vec<AssetNode>> = BTreeMap::new();
-        for node in &self.nodes {
-            let zone_key = format!("{:?}", node.zone);
-            zones.entry(zone_key)
-                .or_insert_with(Vec::new)
-                .push(node.clone());
-        }
-        
-        zones.into_iter().map(|(_, assets)| {
-            let zone = if !assets.is_empty() {
-                assets[0].zone.clone()
-            } else {
-                data::models::ZoneType::Z1
-            };
-            (zone, assets)
-        }).collect()
-    }
-}
+
 
 impl Render for TopologyCanvas {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {

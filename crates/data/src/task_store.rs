@@ -1,6 +1,6 @@
 // TaskStore - 管理任务状态的 Entity，类似 Zed 的 Store 模式
 
-use gpui::{App, Context, Entity, EventEmitter, Global, AppContext};
+use gpui::{App, AppContext, Context, Entity, EventEmitter, Global};
 use std::sync::{Arc, Mutex};
 
 use crate::database::TasksDatabase;
@@ -50,9 +50,9 @@ impl TaskStore {
 
     pub fn get_next_task_id(&self) -> usize {
         let database = self.database.lock().unwrap();
-        database.get_next_task_id().unwrap_or_else(|_| {
-            self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1
-        })
+        database
+            .get_next_task_id()
+            .unwrap_or_else(|_| self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1)
     }
 
     pub fn add_task(&mut self, task: TaskData, cx: &mut Context<Self>) {
@@ -66,6 +66,23 @@ impl TaskStore {
         drop(database);
 
         cx.emit(TaskStoreEvent::TaskAdded(task));
+        cx.notify();
+    }
+
+    pub fn update_task(&mut self, task: TaskData, cx: &mut Context<Self>) {
+        // 找到任务并更新
+        if let Some(pos) = self.tasks.iter().position(|t| t.id == task.id) {
+            self.tasks[pos] = task.clone();
+        }
+
+        // 同步保存到数据库
+        let database = self.database.lock().unwrap();
+        if let Err(e) = database.save_task(&task) {
+            eprintln!("Failed to update task: {}", e);
+        }
+        drop(database);
+
+        cx.emit(TaskStoreEvent::TaskUpdated(task));
         cx.notify();
     }
 
@@ -125,7 +142,9 @@ impl TaskStore {
             return cx.global::<GlobalTaskStore>().0.clone();
         }
 
-        panic!("TaskStore::global() called but no global TaskStore exists. Initialize from workspace initialization.")
+        panic!(
+            "TaskStore::global() called but no global TaskStore exists. Initialize from workspace initialization."
+        )
     }
 }
 

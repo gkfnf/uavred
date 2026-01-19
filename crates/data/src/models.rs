@@ -32,6 +32,7 @@ impl std::fmt::Display for TaskStatus {
 pub struct TaskData {
     pub id: usize,
     pub title: String,
+    pub description: String,
     pub task_type: String,
     pub priority: String,
     pub status: TaskStatus,
@@ -41,6 +42,7 @@ impl TaskData {
     pub fn new(
         id: usize,
         title: String,
+        description: String,
         task_type: String,
         priority: String,
         status: TaskStatus,
@@ -48,6 +50,7 @@ impl TaskData {
         Self {
             id,
             title,
+            description,
             task_type,
             priority,
             status,
@@ -59,6 +62,7 @@ impl TaskData {
         Self {
             id: task.id,
             title: task.title.clone(),
+            description: String::new(),
             task_type: task.task_type.clone(),
             priority: task.priority.clone(),
             status,

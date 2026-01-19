@@ -15,6 +15,39 @@ pub struct NodePosition {
     pub y: f32,
 }
 
+/// 分区布局信息
+#[derive(Clone)]
+pub struct ZoneLayout {
+    pub zone: data::models::ZoneType,
+    pub name: String,              // 分区名称: "地面指挥中心", "通信网关层" 等
+    pub description: String,        // 分区描述
+    pub icon: gpui_component::IconName,
+    pub bg_color: u32,             // 分区背景色
+    pub x: f32,                    // 分区在画布中的 x 坐标
+    pub y: f32,                    // 分区在画布中的 y 坐标
+    pub width: f32,                // 分区宽度
+    pub height: f32,               // 分区高度
+    pub asset_ids: Vec<String>,    // 该分区的资产 ID 列表
+}
+
+/// 连接线样式
+#[derive(Clone, Debug)]
+pub struct ConnectionStyle {
+    pub color: Rgba,
+    pub is_dashed: bool,
+    pub width: f32,
+}
+
+impl Default for ConnectionStyle {
+    fn default() -> Self {
+        Self {
+            color: rgb(0xb0bec5),  // 灰色
+            is_dashed: true,
+            width: 1.5,
+        }
+    }
+}
+
 pub enum AssetSelectedEvent {
     NodeSelected(String),
 }

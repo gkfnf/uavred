@@ -85,12 +85,41 @@ h_flex()
 ```
 
 ### 处理事件
+
+#### 资产选择事件
 ```rust
-// TopologyCanvas 中的事件
+// TopologyCanvas 中发出
 cx.emit(AssetSelectedEvent::NodeSelected(node_id));
 
-// AssetDetailPanel 中接收
-detail_panel.set_node(node, cx);
+// AssetsPanel 中订阅
+cx.subscribe(&topology_canvas, |this, topology, event, cx| {
+    if let AssetSelectedEvent::NodeSelected(node_id) = event {
+        // 更新详情面板
+    }
+});
+```
+
+#### 资产操作事件
+```rust
+// AssetDetailPanel 中发出
+cx.emit(AssetActionEvent::ScanRequested(node));
+cx.emit(AssetActionEvent::EditRequested(node));
+cx.emit(AssetActionEvent::DeleteRequested(node_id));
+
+// 父组件中订阅
+cx.subscribe(&asset_detail_panel, |this, detail_panel, event, cx| {
+    match event {
+        AssetActionEvent::ScanRequested(node) => {
+            // 启动扫描
+        }
+        AssetActionEvent::EditRequested(node) => {
+            // 打开编辑对话框
+        }
+        AssetActionEvent::DeleteRequested(node_id) => {
+            // 显示删除确认
+        }
+    }
+});
 ```
 
 ## 常见任务
@@ -120,6 +149,27 @@ detail_panel.set_node(node, cx);
 detail_panel.clear_node(cx);
 ```
 
+## 完成进度 (2025-01-19)
+
+### ✅ 已实现
+- [x] Zone 分区布局和渲染
+- [x] Asset 节点显示
+- [x] 资产选择交互（点击节点更新详情面板）
+- [x] 详情面板完整信息展示
+- [x] Scan、Edit、Delete 按钮事件处理
+- [x] 自动展开详情面板当资产被选中
+
+### 🚧 进行中
+- [ ] 节点拖拽功能
+- [ ] 缩放和平移控制
+
+### 📋 待实现
+- [ ] Scan 功能集成
+- [ ] Edit 模态框实现
+- [ ] Delete 确认对话框
+- [ ] 搜索和过滤功能
+- [ ] 动画过渡效果
+
 ## 已知问题
 
 1. **拖拽功能**: drag_state 已初始化但拖拽逻辑未完成（Pixels API 访问限制）
@@ -129,7 +179,6 @@ detail_panel.clear_node(cx);
 ## 下一步
 
 - [ ] 完成拖拽节点功能
-- [ ] 添加按钮事件处理（扫描、编辑、删除）
 - [ ] 实现搜索和过滤功能
 - [ ] 添加动画过渡效果
 - [ ] 性能优化（虚拟滚动等）

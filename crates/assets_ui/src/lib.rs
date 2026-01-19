@@ -4,10 +4,12 @@ use gpui_component::{h_flex, label::Label, v_flex, IconName};
 mod components;
 mod asset_detail_panel;
 mod topology_canvas;
+mod events;
 
 pub use asset_detail_panel::AssetDetailPanel;
 pub use topology_canvas::{TopologyCanvas, AssetSelectedEvent};
 pub use components::*;
+pub use events::AssetActionEvent;
 
 use ui::theme::*;
 use data::models::AssetNode;

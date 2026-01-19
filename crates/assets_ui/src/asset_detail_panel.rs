@@ -7,6 +7,9 @@ use crate::components::{
     render_asset_header, render_risk_badge, render_status_indicator, render_port_list, PortItem,
     render_info_card,
 };
+use crate::events::AssetActionEvent;
+
+impl EventEmitter<AssetActionEvent> for AssetDetailPanel {}
 
 pub struct AssetDetailPanel {
     selected_node: Option<AssetNode>,
@@ -44,7 +47,7 @@ impl AssetDetailPanel {
 }
 
 impl Render for AssetDetailPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if let Some(node) = self.selected_node.clone() {
             v_flex()
                 .size_full()
@@ -140,7 +143,8 @@ impl Render for AssetDetailPanel {
                                 .pt_4()
                                 .border_t_1()
                                 .border_color(rgb(BORDER_COLOR))
-                                .children(vec![
+                                .child({
+                                    let node = node.clone();
                                     div()
                                         .flex_1()
                                         .px_3()
@@ -149,12 +153,19 @@ impl Render for AssetDetailPanel {
                                         .bg(rgb(ACCENT_BLUE))
                                         .items_center()
                                         .justify_center()
+                                        .cursor_pointer()
+                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
+                                            cx.emit(AssetActionEvent::ScanRequested(node.clone()));
+                                        }))
                                         .child(
                                             Label::new("Scan")
                                                 .text_sm()
                                                 .font_weight(FontWeight::SEMIBOLD)
                                                 .text_color(rgb(0xffffff)),
-                                        ),
+                                        )
+                                })
+                                .child({
+                                    let node = node.clone();
                                     div()
                                         .flex_1()
                                         .px_3()
@@ -165,12 +176,19 @@ impl Render for AssetDetailPanel {
                                         .justify_center()
                                         .border_1()
                                         .border_color(rgb(BORDER_COLOR))
+                                        .cursor_pointer()
+                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
+                                            cx.emit(AssetActionEvent::EditRequested(node.clone()));
+                                        }))
                                         .child(
                                             Label::new("Edit")
                                                 .text_sm()
                                                 .font_weight(FontWeight::SEMIBOLD)
                                                 .text_color(rgb(TEXT_PRIMARY)),
-                                        ),
+                                        )
+                                })
+                                .child({
+                                    let node_id = node.id.clone();
                                     div()
                                         .flex_1()
                                         .px_3()
@@ -181,8 +199,12 @@ impl Render for AssetDetailPanel {
                                         .justify_center()
                                         .border_1()
                                         .border_color(rgb(BORDER_COLOR))
-                                        .child(IconName::Close),
-                                ])
+                                        .cursor_pointer()
+                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
+                                            cx.emit(AssetActionEvent::DeleteRequested(node_id.clone()));
+                                        }))
+                                        .child(IconName::Close)
+                                })
                                 .into_any_element(),
                         ])
                 )

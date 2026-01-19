@@ -53,34 +53,56 @@ pub enum AssetSelectedEvent {
 }
 
 pub struct TopologyCanvas {
+    // 数据
     nodes: Vec<AssetNode>,
     connections: Vec<Connection>,
-    node_positions: HashMap<String, NodePosition>,
+    
+    // 布局数据
+    zones_layout: Vec<ZoneLayout>,  // 5 个分区的布局信息
+    node_positions: HashMap<String, NodePosition>,  // 节点位置映射
+    
+    // 交互状态
     selected_node_id: Option<String>,
+    hovered_node_id: Option<String>,
+    
+    // 画布状态
+    canvas_bounds: Option<Bounds<Pixels>>,
+    
+    // 显示参数
     scale: f32,
     offset_x: f32,
     offset_y: f32,
     drag_state: Option<(String, Point<Pixels>)>,
-    canvas_bounds: Option<Bounds<Pixels>>,
+    zoom_level: f32,
+    pan_x: f32,
+    pan_y: f32,
 }
 
 impl TopologyCanvas {
     pub fn new(_cx: &mut Context<Self>) -> Self {
         let nodes = Self::create_sample_nodes();
         let connections = Self::create_sample_connections(&nodes);
-        let node_positions = Self::calculate_node_positions(&nodes);
-
-        Self {
+        let zones_layout = Self::create_zones_layout();  // 新增
+        let mut canvas = Self {
             nodes,
             connections,
-            node_positions,
+            zones_layout,
+            node_positions: HashMap::new(),
             selected_node_id: None,
+            hovered_node_id: None,
+            canvas_bounds: None,
             scale: 1.0,
             offset_x: 0.0,
             offset_y: 0.0,
             drag_state: None,
-            canvas_bounds: None,
-        }
+            zoom_level: 1.0,
+            pan_x: 0.0,
+            pan_y: 0.0,
+        };
+        
+        // 初始布局计算 (使用默认 canvas 宽度)
+        canvas.calculate_layout(800.0, 600.0);
+        canvas
     }
 
     fn create_sample_nodes() -> Vec<AssetNode> {
@@ -233,6 +255,156 @@ impl TopologyCanvas {
                 port: 443,
             },
         ]
+    }
+
+    fn create_zones_layout() -> Vec<ZoneLayout> {
+        vec![
+            ZoneLayout {
+                zone: data::models::ZoneType::Z1,
+                name: "Z1".to_string(),
+                description: "地面指挥中心".to_string(),
+                icon: gpui_component::IconName::Globe,
+                bg_color: 0xe3f2fd,  // 蓝色
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                asset_ids: Vec::new(),
+            },
+            ZoneLayout {
+                zone: data::models::ZoneType::Z2,
+                name: "Z2".to_string(),
+                description: "通信网关层".to_string(),
+                icon: gpui_component::IconName::Network,
+                bg_color: 0xf1f8e9,  // 绿色
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                asset_ids: Vec::new(),
+            },
+            ZoneLayout {
+                zone: data::models::ZoneType::Z3,
+                name: "Z3".to_string(),
+                description: "任务控制层".to_string(),
+                icon: gpui_component::IconName::Settings,
+                bg_color: 0xfce4ec,  // 粉色
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                asset_ids: Vec::new(),
+            },
+            ZoneLayout {
+                zone: data::models::ZoneType::Z4,
+                name: "Z4".to_string(),
+                description: "飞控设备层".to_string(),
+                icon: gpui_component::IconName::HardDrive,
+                bg_color: 0xfff3e0,  // 橙色
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                asset_ids: Vec::new(),
+            },
+            ZoneLayout {
+                zone: data::models::ZoneType::Z5,
+                name: "Z5".to_string(),
+                description: "安全应急系统".to_string(),
+                icon: gpui_component::IconName::TriangleAlert,
+                bg_color: 0xf3e5f5,  // 紫色
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                asset_ids: Vec::new(),
+            },
+        ]
+    }
+
+    /// 计算所有分区和节点的布局位置
+    fn calculate_layout(&mut self, canvas_width: f32, canvas_height: f32) {
+        if canvas_width <= 0.0 || canvas_height <= 0.0 {
+            return;
+        }
+        
+        // 1. 清空旧位置数据
+        self.node_positions.clear();
+        for zone in &mut self.zones_layout {
+            zone.asset_ids.clear();
+        }
+        
+        // 2. 分配每个节点到对应的分区
+        for node in &self.nodes {
+            for zone in &mut self.zones_layout {
+                if zone.zone == node.zone {
+                    zone.asset_ids.push(node.id.clone());
+                    break;
+                }
+            }
+        }
+        
+        // 3. 计算分区的位置和大小
+        let zone_count = 5;
+        let zone_width = canvas_width / zone_count as f32;
+        let zone_height = canvas_height;
+        let header_height = 80.0;  // 分区头部高度
+        
+        for (idx, zone) in self.zones_layout.iter_mut().enumerate() {
+            zone.x = idx as f32 * zone_width;
+            zone.y = 0.0;
+            zone.width = zone_width;
+            zone.height = zone_height;
+        }
+        
+        // 4. 计算每个节点在其分区内的位置
+        for zone in &self.zones_layout {
+            let asset_count = zone.asset_ids.len();
+            let inner_width = zone.width - 40.0;   // 分区左右 padding
+            let inner_height = zone.height - header_height - 40.0;  // 分区上下 padding
+            
+            for (node_idx, node_id) in zone.asset_ids.iter().enumerate() {
+                let node_pos = self.calculate_node_position_in_zone(
+                    zone.x,
+                    zone.y + header_height,
+                    inner_width,
+                    inner_height,
+                    node_idx,
+                    asset_count,
+                );
+                self.node_positions.insert(node_id.clone(), node_pos);
+            }
+        }
+    }
+
+    /// 计算节点在分区内的位置
+    fn calculate_node_position_in_zone(
+        &self,
+        zone_x: f32,
+        zone_y: f32,
+        zone_width: f32,
+        zone_height: f32,
+        node_idx: usize,
+        total_nodes: usize,
+    ) -> NodePosition {
+        let padding = 20.0;
+        
+        // 根据节点数量选择网格布局
+        let cols = if total_nodes > 4 { 2 } else { 1 };
+        let col = node_idx % cols;
+        let row = node_idx / cols;
+        
+        let col_width = (zone_width - 2.0 * padding) / cols as f32;
+        let row_height = if total_nodes > 0 {
+            (zone_height - 2.0 * padding) / ((total_nodes + cols - 1) / cols) as f32
+        } else {
+            zone_height / 2.0
+        };
+        
+        let x = zone_x + padding + col as f32 * col_width + col_width / 2.0;
+        let y = zone_y + padding + row as f32 * row_height + row_height / 2.0;
+        
+        NodePosition { x, y }
     }
 
     fn calculate_node_positions(nodes: &[AssetNode]) -> HashMap<String, NodePosition> {

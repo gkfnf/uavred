@@ -6,7 +6,7 @@ mod asset_detail_panel;
 mod topology_canvas;
 
 pub use asset_detail_panel::AssetDetailPanel;
-pub use topology_canvas::TopologyCanvas;
+pub use topology_canvas::{TopologyCanvas, AssetSelectedEvent};
 pub use components::*;
 
 use ui::theme::*;
@@ -18,6 +18,7 @@ pub struct AssetsPanel {
     topology_canvas: Entity<TopologyCanvas>,
     asset_detail_panel: Entity<AssetDetailPanel>,
     selected_asset: Option<AssetNode>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl AssetsPanel {
@@ -25,12 +26,37 @@ impl AssetsPanel {
         let topology_canvas = cx.new(TopologyCanvas::new);
         let asset_detail_panel = cx.new(AssetDetailPanel::new);
 
+        // Subscribe to asset selection events from topology canvas
+        let asset_detail_panel_clone = asset_detail_panel.clone();
+        let subscription = cx.subscribe(
+            &topology_canvas,
+            move |this, topology, event, cx| {
+                let AssetSelectedEvent::NodeSelected(node_id) = event;
+                // Find the node in the topology canvas and clone it
+                let node = topology.read(cx).nodes.iter()
+                    .find(|n| n.id == *node_id)
+                    .cloned();
+                
+                if let Some(node) = node {
+                    // Update detail panel with selected node
+                    asset_detail_panel_clone.update(cx, |panel, cx| {
+                        panel.set_node(node.clone(), cx);
+                    });
+                    // Update local state
+                    this.selected_asset = Some(node);
+                    this.details_expanded = true;
+                    cx.notify();
+                }
+            },
+        );
+
         Self {
             topology_expanded: true,
             details_expanded: false,
             topology_canvas,
             asset_detail_panel,
             selected_asset: None,
+            _subscriptions: vec![subscription],
         }
     }
 

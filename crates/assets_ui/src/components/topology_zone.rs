@@ -48,6 +48,7 @@ impl TopologyZone {
 pub fn render_topology_zone(zone: &TopologyZone) -> impl IntoElement {
     v_flex()
         .flex_1()
+        .size_full()
         .gap_0()
         .rounded_lg()
         .bg(rgb(zone.bg_color))
@@ -57,6 +58,8 @@ pub fn render_topology_zone(zone: &TopologyZone) -> impl IntoElement {
         .child(
             // 分区卡片头
             h_flex()
+                .flex_none()
+                .w_full()
                 .gap_2()
                 .p_3()
                 .bg(rgb(BG_PRIMARY))
@@ -111,9 +114,10 @@ pub fn render_topology_zone(zone: &TopologyZone) -> impl IntoElement {
                 )
         )
         .child(
-            // 分区内容区域 (资产节点)
+            // 分区内容区域 (资产节点) - 占据剩余所有空间
             v_flex()
                 .flex_1()
+                .size_full()
                 .p_4()
                 .gap_3()
                 .items_center()

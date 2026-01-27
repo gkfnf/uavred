@@ -56,13 +56,6 @@ pub struct ZoneLayout {
 //     }
 // }
 
-/// Events emitted by TopologyCanvas when user interacts with nodes
-#[derive(Clone, Debug)]
-pub enum AssetSelectedEvent {
-    /// User clicked on an asset node
-    NodeSelected(String),
-}
-
 /// TopologyCanvas - Network topology visualization canvas
 ///
 /// Renders 5 network zones (Z1-Z5) with asset nodes and connections.

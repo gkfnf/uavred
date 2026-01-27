@@ -14,6 +14,16 @@ pub use events::AssetActionEvent;
 use ui::theme::*;
 use data::models::AssetNode;
 
+/// AssetsPanel - Top-level asset management container
+///
+/// Coordinates:
+/// 1. TopologyCanvas - renders network asset topology
+/// 2. AssetDetailPanel - displays selected asset details
+///
+/// Selection flow:
+/// User clicks asset node → TopologyCanvas emits AssetSelectedEvent
+/// → AssetsPanel subscribes and updates AssetDetailPanel
+/// → Details panel shows asset information and action buttons
 pub struct AssetsPanel {
     topology_expanded: bool,
     details_expanded: bool,
@@ -110,6 +120,51 @@ impl Render for AssetsPanel {
                                     .text_sm()
                                     .font_weight(FontWeight::SEMIBOLD)
                             )
+                            .child(div().flex_1())
+                            .child(
+                                // Status legend from design
+                                h_flex()
+                                    .gap_3()
+                                    .items_center()
+                                    .child(
+                                        h_flex()
+                                            .gap_1()
+                                            .items_center()
+                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0x10b981)))
+                                            .child(Label::new("低危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    )
+                                    .child(
+                                        h_flex()
+                                            .gap_1()
+                                            .items_center()
+                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xfbbf24)))
+                                            .child(Label::new("中危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    )
+                                    .child(
+                                        h_flex()
+                                            .gap_1()
+                                            .items_center()
+                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xf97316)))
+                                            .child(Label::new("高危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    )
+                                    .child(
+                                        h_flex()
+                                            .gap_1()
+                                            .items_center()
+                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xef4444)))
+                                            .child(Label::new("严重").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    )
+                            )
+                            .child(
+                                h_flex()
+                                    .gap_2()
+                                    .items_center()
+                                    .ml_4()
+                                    .child(Label::new("8 资产").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    .child(div().w(px(1.0)).h(px(12.0)).bg(rgb(BORDER_COLOR)))
+                                    .child(Label::new("19 连接").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                            )
+                            .child(IconName::ChevronDown)
                     )
                     .child(
                         if self.topology_expanded {

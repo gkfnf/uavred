@@ -1,16 +1,22 @@
 use gpui::*;
-use gpui_component::{h_flex, label::Label, v_flex, IconName};
+use gpui_component::{h_flex, label::Label, v_flex, IconName, Icon, Sizable};
 use ui::theme::*;
 use data::models::AssetNode;
 
-use crate::components::{
-    render_asset_header, render_risk_badge, render_status_indicator, render_port_list, PortItem,
-    render_info_card,
-};
 use crate::events::AssetActionEvent;
 
 impl EventEmitter<AssetActionEvent> for AssetDetailPanel {}
 
+/// AssetDetailPanel - Displays detailed information about a selected asset
+///
+/// Shows:
+/// - Asset header with name, IP, and actions (Delete)
+/// - Zone and risk score information
+/// - Open ports and detected services
+/// - Credentials and business purpose
+/// - Action buttons (AI Analysis, Scan, Edit)
+///
+/// Emits AssetActionEvent when user clicks action buttons.
 pub struct AssetDetailPanel {
     selected_node: Option<AssetNode>,
 }
@@ -31,182 +37,287 @@ impl AssetDetailPanel {
         self.selected_node = None;
         cx.notify();
     }
-
-    fn render_section_title(title: impl Into<SharedString>) -> Div {
-        let title: SharedString = title.into();
-        div()
-            .mt_4()
-            .mb_2()
-            .child(
-                Label::new(title)
-                    .text_sm()
-                    .text_color(rgb(TEXT_SECONDARY))
-                    .font_weight(FontWeight::SEMIBOLD),
-            )
-    }
 }
 
 impl Render for AssetDetailPanel {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         if let Some(node) = self.selected_node.clone() {
             v_flex()
                 .size_full()
                 .gap_0()
-                .bg(rgb(BG_CARD))
-                .rounded_lg()
-                .overflow_hidden()
-                .child(render_asset_header(&node).into_any_element())
+                .bg(rgb(0xffffff)) // White background for the panel
                 .child(
-                    v_flex()
-                        .flex_1()
-                        .gap_3()
+                    // Panel Header
+                    h_flex()
+                        .w_full()
                         .p_4()
-                        .overflow_hidden()
-                        .children(vec![
-                            // Basic Information Section
-                            Self::render_section_title("Basic Information").into_any_element(),
+                        .items_center()
+                        .gap_3()
+                        .child(
+                            Label::new("资产详情")
+                                .text_sm()
+                                .text_color(rgb(TEXT_SECONDARY))
+                        )
+                        .child(div().size(px(8.0)).rounded_full().bg(rgb(0xfbbf24))) // Risk dot
+                        .child(
+                            Label::new(node.name.clone())
+                                .text_base()
+                                .font_weight(FontWeight::BOLD)
+                        )
+                        .child(
+                            Label::new(node.ip_address.clone())
+                                .text_sm()
+                                .text_color(rgb(TEXT_MUTED))
+                        )
+                        .child(div().flex_1())
+                        .child(
                             h_flex()
-                                .gap_2()
-                                .child(render_info_card("ID", node.id.clone()))
-                                .child(render_info_card("Type", node.asset_type.clone()))
-                                .into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("MAC Address", node.mac_address.clone().unwrap_or_else(|| "N/A".to_string())))
-                                .child(render_info_card("Manufacturer", node.manufacturer.clone().unwrap_or_else(|| "N/A".to_string())))
-                                .into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("Firmware", node.firmware_version.clone().unwrap_or_else(|| "N/A".to_string())))
-                                .child(render_info_card("Location", node.location.clone().unwrap_or_else(|| "N/A".to_string())))
-                                .into_any_element(),
-                            
-                            // Security Section
-                            Self::render_section_title("Security & Risk").into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .items_center()
-                                .child(render_risk_badge(&node.severity, node.risk_score).into_any_element())
-                                .child(render_status_indicator(&node.status).into_any_element())
-                                .into_any_element(),
-                            render_info_card("Vulnerabilities", &format!("{} found", node.vulnerabilities_count))
-                                .into_any_element(),
-
-                            // Network Information Section
-                            Self::render_section_title("Network Information").into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("Zone", format!("{:?}", node.zone)))
-                                .child(render_info_card("Open Ports", format!("{}", node.open_ports_count())))
-                                .into_any_element(),
-                            render_info_card("Services", &format!("{} available", node.services_count()))
-                                .into_any_element(),
-
-                            // Open Ports
-                            Self::render_section_title("Open Ports").into_any_element(),
-                            {
-                                let ports: Vec<_> = node.open_ports.iter().map(|port| PortItem {
-                                    port: *port,
-                                    protocol: "TCP".to_string(),
-                                    service: None,
-                                }).collect();
-                                render_port_list(&ports).into_any_element()
-                            },
-
-                            // Owner & Department Section
-                            Self::render_section_title("Owner & Department").into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("Owner", node.owner.clone()))
-                                .child(render_info_card("Department", node.department.clone().unwrap_or_else(|| "N/A".to_string())))
-                                .into_any_element(),
-                            render_info_card("Business Purpose", node.business_purpose.clone())
-                                .into_any_element(),
-
-                            // Scan Status Section
-                            Self::render_section_title("Scan Status").into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("Last Scan", node.scan_progress.last_scan.clone().unwrap_or_else(|| "Never".to_string())))
-                                .child(render_info_card("Next Scan", node.scan_progress.next_scan.clone().unwrap_or_else(|| "Not Scheduled".to_string())))
-                                .into_any_element(),
-                            h_flex()
-                                .gap_2()
-                                .child(render_info_card("Scan Type", &node.scan_progress.scan_type))
-                                .child(render_info_card("Progress", &format!("{}%", node.scan_progress.percentage)))
-                                .into_any_element(),
-
-                            // Action Buttons
-                            h_flex()
-                                .gap_2()
-                                .mt_4()
-                                .pt_4()
-                                .border_t_1()
-                                .border_color(rgb(BORDER_COLOR))
-                                .child({
-                                    let node = node.clone();
+                                .gap_4()
+                                .child(Icon::new(IconName::Settings).with_size(px(18.0)).text_color(rgb(TEXT_MUTED)))
+                                .child(
                                     div()
-                                        .flex_1()
-                                        .px_3()
-                                        .py_2()
-                                        .rounded_md()
-                                        .bg(rgb(ACCENT_BLUE))
-                                        .items_center()
-                                        .justify_center()
                                         .cursor_pointer()
-                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
-                                            cx.emit(AssetActionEvent::ScanRequested(node.clone()));
-                                        }))
-                                        .child(
-                                            Label::new("Scan")
-                                                .text_sm()
-                                                .font_weight(FontWeight::SEMIBOLD)
-                                                .text_color(rgb(0xffffff)),
-                                        )
-                                })
-                                .child({
-                                    let node = node.clone();
-                                    div()
-                                        .flex_1()
-                                        .px_3()
-                                        .py_2()
-                                        .rounded_md()
-                                        .bg(rgb(BG_SECONDARY))
-                                        .items_center()
-                                        .justify_center()
+                                        .on_click({
+                                            let node_id = node.id.clone();
+                                            move |_, _, cx: &mut Context<AssetDetailPanel>| {
+                                                cx.emit(AssetActionEvent::DeleteRequested(node_id.clone()));
+                                            }
+                                        })
+                                        .child(Icon::new(IconName::Delete).with_size(px(18.0)).text_color(rgb(TEXT_MUTED)))
+                                )
+                                .child(Icon::new(IconName::ChevronDown).with_size(px(18.0)).text_color(rgb(TEXT_MUTED)))
+                        )
+                )
+                .child(
+                    // Content Grid
+                    h_flex()
+                        .w_full()
+                        .p_4()
+                        .gap_4()
+                        .items_start()
+                        // Column 1: Zone & Risk
+                        .child(
+                            v_flex()
+                                .w(px(180.0))
+                                .gap_4()
+                                .child(
+                                    // Zone Card
+                                    v_flex()
+                                        .p_3()
+                                        .rounded_lg()
+                                        .bg(rgb(0xfdf4ff)) // Very light purple
                                         .border_1()
-                                        .border_color(rgb(BORDER_COLOR))
-                                        .cursor_pointer()
-                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
-                                            cx.emit(AssetActionEvent::EditRequested(node.clone()));
-                                        }))
+                                        .border_color(rgb(0xf5d0fe))
+                                        .gap_2()
                                         .child(
-                                            Label::new("Edit")
-                                                .text_sm()
-                                                .font_weight(FontWeight::SEMIBOLD)
-                                                .text_color(rgb(TEXT_PRIMARY)),
+                                            h_flex()
+                                                .gap_2()
+                                                .items_center()
+                                                .child(Icon::new(IconName::CircleCheck).with_size(px(20.0)).text_color(rgb(0x7c3aed)))
+                                                .child(Label::new(format!("Z{}", (node.zone as u8 + 1))).font_weight(FontWeight::BOLD).text_color(rgb(0x7c3aed)))
                                         )
-                                })
-                                .child({
-                                    let node_id = node.id.clone();
+                                        .child(
+                                            Label::new(node.zone.display_name())
+                                                .text_sm()
+                                                .font_weight(FontWeight::MEDIUM)
+                                        )
+                                )
+                                .child(
+                                    // Risk Score Card
+                                    v_flex()
+                                        .p_3()
+                                        .rounded_lg()
+                                        .bg(rgb(0xfdf4ff))
+                                        .border_1()
+                                        .border_color(rgb(0xf5d0fe))
+                                        .child(
+                                            h_flex()
+                                                .justify_between()
+                                                .child(Label::new("风险评分").text_xs().text_color(rgb(0x7c3aed)).font_weight(FontWeight::BOLD))
+                                                .child(Label::new(node.risk_score.to_string()).text_xl() .font_weight(FontWeight::BOLD).text_color(rgb(0x7c3aed)))
+                                        )
+                                        .child(
+                                            div()
+                                                .mt_2()
+                                                .w_full()
+                                                .h(px(6.0))
+                                                .bg(rgb(0xe5e7eb))
+                                                .rounded_full()
+                                                .child(
+                                                    div()
+                                                        .w(relative(node.risk_score as f32 / 100.0))
+                                                        .h_full()
+                                                        .bg(rgb(0xfbbf24))
+                                                        .rounded_full()
+                                                )
+                                        )
+                                )
+                        )
+                        // Column 2: Ports & Services
+                        .child(
+                            v_flex()
+                                .flex_1()
+                                .gap_4()
+                                .child(
+                                    // Open Ports
+                                    v_flex()
+                                        .gap_2()
+                                        .child(Label::new("开放端口").text_xs().text_color(rgb(TEXT_SECONDARY)).font_weight(FontWeight::BOLD))
+                                        .child(
+                                            h_flex()
+                                                .gap_2()
+                                                .children(node.open_ports.iter().map(|port| {
+                                                    div()
+                                                        .px_3()
+                                                        .py_1()
+                                                        .bg(rgb(0xf3f4f6))
+                                                        .rounded_md()
+                                                        .child(Label::new(port.to_string()).text_xs())
+                                                }))
+                                        )
+                                        .child(Label::new("协议: HTTPS").text_xs().text_color(rgb(TEXT_MUTED)))
+                                        .child(Label::new("最后扫描: 3m ago").text_xs().text_color(rgb(TEXT_MUTED)))
+                                )
+                                .child(
+                                    // Services
+                                    v_flex()
+                                        .gap_2()
+                                        .child(Label::new("检测到的服务").text_xs().text_color(rgb(TEXT_SECONDARY)).font_weight(FontWeight::BOLD))
+                                        .child(
+                                            v_flex()
+                                                .gap_1()
+                                                .child(
+                                                    div().px_3().py_1().bg(rgb(0xf3f4f6)).rounded_md().child(Label::new("HTTPS").text_xs())
+                                                )
+                                                .child(
+                                                    div().px_3().py_1().bg(rgb(0xf3f4f6)).rounded_md().child(Label::new("REST API").text_xs())
+                                                )
+                                                .child(
+                                                    div().px_3().py_1().bg(rgb(0xf3f4f6)).rounded_md().child(Label::new("WebSocket").text_xs())
+                                                )
+                                        )
+                                )
+                        )
+                        // Column 3: Credentials & Purpose
+                        .child(
+                            v_flex()
+                                .flex_1()
+                                .gap_4()
+                                .child(
+                                    // Credentials
+                                    v_flex()
+                                        .p_3()
+                                        .rounded_lg()
+                                        .bg(rgb(0xf8fafc))
+                                        .border_1()
+                                        .border_color(rgb(0xe2e8f0))
+                                        .gap_2()
+                                        .child(Label::new("认证凭证").text_xs().text_color(rgb(TEXT_SECONDARY)).font_weight(FontWeight::BOLD))
+                                        .child(Label::new("类型: OAuth2 + MFA").text_xs().text_color(rgb(TEXT_MUTED)))
+                                        .child(
+                                            div()
+                                                .px_3()
+                                                .py_1()
+                                                .bg(rgb(0xffffff))
+                                                .border_1()
+                                                .border_color(rgb(0xe2e8f0))
+                                                .rounded_md()
+                                                .child(Label::new("mission_ctrl").text_xs())
+                                        )
+                                        .child(
+                                            h_flex()
+                                                .gap_1()
+                                                .items_center()
+                                                .child(div().size(px(6.0)).rounded_full().bg(rgb(0x10b981)))
+                                                .child(Label::new("有效").text_xs().text_color(rgb(0x10b981)))
+                                        )
+                                )
+                                .child(
+                                    // Purpose
+                                    v_flex()
+                                        .p_3()
+                                        .rounded_lg()
+                                        .bg(rgb(0xf0f9ff))
+                                        .border_1()
+                                        .border_color(rgb(0xbae6fd))
+                                        .gap_1()
+                                        .child(Label::new("业务用途").text_xs().text_color(rgb(0x0284c7)).font_weight(FontWeight::BOLD))
+                                        .child(Label::new("任务规划与执行控制").text_xs().text_color(rgb(TEXT_PRIMARY)))
+                                )
+                        )
+                        // Column 4: Actions & Stats
+                        .child(
+                            v_flex()
+                                .w(px(180.0))
+                                .gap_2()
+                                .child(
                                     div()
-                                        .flex_1()
-                                        .px_3()
+                                        .w_full()
                                         .py_2()
-                                        .rounded_md()
-                                        .bg(rgb(BG_SECONDARY))
+                                        .rounded_lg()
+                                        .bg(rgb(0xfdf4ff))
+                                        .flex()
                                         .items_center()
                                         .justify_center()
-                                        .border_1()
-                                        .border_color(rgb(BORDER_COLOR))
+                                        .gap_2()
                                         .cursor_pointer()
-                                        .on_mouse_down(MouseButton::Left, cx.listener(move |_this, _event, _window, cx| {
-                                            cx.emit(AssetActionEvent::DeleteRequested(node_id.clone()));
-                                        }))
-                                        .child(IconName::Close)
-                                })
-                                .into_any_element(),
-                        ])
+                                        .on_click({
+                                            let node = node.clone();
+                                            move |_, _, cx: &mut Context<AssetDetailPanel>| {
+                                                cx.emit(AssetActionEvent::ScanRequested(node.clone()));
+                                            }
+                                        })
+                                        .child(Icon::new(IconName::Star).with_size(px(16.0)).text_color(rgb(0x7c3aed)))
+                                        .child(Label::new("AI 分析").text_sm().font_weight(FontWeight::BOLD).text_color(rgb(0x7c3aed)))
+                                )
+                                .child(
+                                    div()
+                                        .w_full()
+                                        .py_2()
+                                        .rounded_lg()
+                                        .bg(rgb(0x7c3aed))
+                                        .flex()
+                                        .items_center()
+                                        .justify_center()
+                                        .gap_2()
+                                        .cursor_pointer()
+                                        .on_click({
+                                            let node = node.clone();
+                                            move |_, _, cx: &mut Context<AssetDetailPanel>| {
+                                                cx.emit(AssetActionEvent::ScanRequested(node.clone()));
+                                            }
+                                        })
+                                        .child(Icon::new(IconName::BatteryCharging).with_size(px(16.0)).text_color(rgb(0xffffff)))
+                                        .child(Label::new("扫描资产").text_sm().font_weight(FontWeight::BOLD).text_color(rgb(0xffffff)))
+                                )
+                                .child(
+                                    div()
+                                        .w_full()
+                                        .py_2()
+                                        .rounded_lg()
+                                        .bg(rgb(0xf1f5f9))
+                                        .flex()
+                                        .items_center()
+                                        .justify_center()
+                                        .gap_2()
+                                        .cursor_pointer()
+                                        .on_click({
+                                            let node = node.clone();
+                                            move |_, _, cx: &mut Context<AssetDetailPanel>| {
+                                                cx.emit(AssetActionEvent::EditRequested(node.clone()));
+                                            }
+                                        })
+                                        .child(Icon::new(IconName::Settings).with_size(px(16.0)).text_color(rgb(TEXT_SECONDARY)))
+                                        .child(Label::new("配置").text_sm().font_weight(FontWeight::BOLD).text_color(rgb(TEXT_SECONDARY)))
+                                )
+                                .child(
+                                    v_flex()
+                                        .mt_4()
+                                        .gap_1()
+                                        .child(Label::new("漏洞统计").text_xs().text_color(rgb(TEXT_MUTED)))
+                                        .child(Label::new(node.vulnerabilities_count.to_string()).text_xl().font_weight(FontWeight::BOLD))
+                                )
+                        )
                 )
         } else {
             v_flex()
@@ -216,13 +327,12 @@ impl Render for AssetDetailPanel {
                 .bg(rgb(BG_CARD))
                 .rounded_lg()
                 .child(
-                    h_flex()
-                        .flex_col()
+                    v_flex()
                         .items_center()
                         .gap_3()
-                        .child(IconName::SquareTerminal)
+                        .child(Icon::new(IconName::SquareTerminal).with_size(px(48.0)).text_color(rgb(TEXT_MUTED)))
                         .child(
-                            Label::new("Select an asset to view details")
+                            Label::new("选择一个资产来查看详情")
                                 .text_sm()
                                 .text_color(rgb(TEXT_MUTED)),
                         ),

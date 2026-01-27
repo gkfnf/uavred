@@ -1,14 +1,22 @@
 use gpui::*;
 use std::collections::HashMap;
 
-use gpui_component::{v_flex, h_flex};
+use gpui_component::h_flex;
 use ui::theme::*;
 
 use data::models::{AssetNode, Connection};
-use crate::components::{TopologyZone, render_topology_zone};
+use crate::components::{TopologyZone, render_topology_zone_bg, render_asset_node_at};
 
 impl EventEmitter<AssetSelectedEvent> for TopologyCanvas {}
 
+/// Events emitted by TopologyCanvas when user interacts with nodes
+#[derive(Clone, Debug)]
+pub enum AssetSelectedEvent {
+    /// User clicked on an asset node
+    NodeSelected(String),
+}
+
+/// Position of a node on the canvas
 #[derive(Clone, Debug)]
 pub struct NodePosition {
     pub x: f32,
@@ -48,10 +56,22 @@ pub struct ZoneLayout {
 //     }
 // }
 
+/// Events emitted by TopologyCanvas when user interacts with nodes
+#[derive(Clone, Debug)]
 pub enum AssetSelectedEvent {
+    /// User clicked on an asset node
     NodeSelected(String),
 }
 
+/// TopologyCanvas - Network topology visualization canvas
+///
+/// Renders 5 network zones (Z1-Z5) with asset nodes and connections.
+/// Handles user interaction for asset selection.
+///
+/// Layout:
+/// - Zone backgrounds and headers (Layer 1)
+/// - Connection lines between nodes (Layer 2)
+/// - Asset nodes at absolute positions (Layer 3)
 pub struct TopologyCanvas {
     // 数据
     pub nodes: Vec<AssetNode>,
@@ -96,9 +116,177 @@ impl TopologyCanvas {
 
     fn create_sample_nodes() -> Vec<AssetNode> {
         vec![
+            // Z1 - 地面指挥中心
             AssetNode {
-                id: "uav-1".to_string(),
-                name: "DJI Mavic 3 Pro".to_string(),
+                id: "gcs-primary".to_string(),
+                name: "GCS Primary".to_string(),
+                ip_address: "10.0.1.10".to_string(),
+                mac_address: Some("00:11:22:33:44:55".to_string()),
+                zone: data::models::ZoneType::Z1,
+                severity: data::models::Severity::Low,
+                risk_score: 15,
+                vulnerabilities_count: 1,
+                services: vec![],
+                open_ports: vec![80, 443],
+                credentials: vec![],
+                owner: "Command Center".to_string(),
+                business_purpose: "Ground Control".to_string(),
+                department: Some("Operations".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 100,
+                    last_scan: Some("2024-01-13T10:30:00Z".to_string()),
+                    next_scan: Some("2024-01-14T10:30:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![
+                    data::models::Connection {
+                        target_id: "telemetry-service".to_string(),
+                        connection_type: "Data".to_string(),
+                        protocol: "MAVLink".to_string(),
+                        port: 5760,
+                    }
+                ],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "GCS".to_string(),
+                firmware_version: Some("v2.5.0".to_string()),
+                manufacturer: Some("DefenseTech".to_string()),
+                location: Some("Main HQ".to_string()),
+            },
+            // Z2 - 通信网关层
+            AssetNode {
+                id: "telemetry-service".to_string(),
+                name: "Telemetry Se...".to_string(),
+                ip_address: "10.0.1.20".to_string(),
+                mac_address: Some("AA:BB:CC:DD:EE:01".to_string()),
+                zone: data::models::ZoneType::Z2,
+                severity: data::models::Severity::Low,
+                risk_score: 10,
+                vulnerabilities_count: 0,
+                services: vec![],
+                open_ports: vec![5760],
+                credentials: vec![],
+                owner: "Network Team".to_string(),
+                business_purpose: "Data Relaying".to_string(),
+                department: Some("IT".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 100,
+                    last_scan: Some("2024-01-13T10:30:00Z".to_string()),
+                    next_scan: Some("2024-01-14T10:30:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![
+                    data::models::Connection {
+                        target_id: "mission-control-server".to_string(),
+                        connection_type: "Data".to_string(),
+                        protocol: "TCP".to_string(),
+                        port: 8080,
+                    }
+                ],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "Router".to_string(),
+                firmware_version: Some("v1.2.0".to_string()),
+                manufacturer: Some("Cisco".to_string()),
+                location: Some("Comms Tower".to_string()),
+            },
+            AssetNode {
+                id: "data-gateway".to_string(),
+                name: "Data Gateway".to_string(),
+                ip_address: "10.0.1.21".to_string(),
+                mac_address: Some("AA:BB:CC:DD:EE:02".to_string()),
+                zone: data::models::ZoneType::Z2,
+                severity: data::models::Severity::Low,
+                risk_score: 12,
+                vulnerabilities_count: 0,
+                services: vec![],
+                open_ports: vec![8080],
+                credentials: vec![],
+                owner: "Network Team".to_string(),
+                business_purpose: "Data Ingestion".to_string(),
+                department: Some("IT".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 100,
+                    last_scan: Some("2024-01-13T10:30:00Z".to_string()),
+                    next_scan: Some("2024-01-14T10:30:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![
+                    data::models::Connection {
+                        target_id: "mission-control-server".to_string(),
+                        connection_type: "Data".to_string(),
+                        protocol: "TCP".to_string(),
+                        port: 8080,
+                    }
+                ],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "Router".to_string(),
+                firmware_version: Some("v1.2.1".to_string()),
+                manufacturer: Some("Cisco".to_string()),
+                location: Some("Comms Tower".to_string()),
+            },
+            // Z3 - 任务控制层
+            AssetNode {
+                id: "mission-control-server".to_string(),
+                name: "Mission Control Server".to_string(),
+                ip_address: "10.0.1.52".to_string(),
+                mac_address: Some("CC:DD:EE:FF:00:11".to_string()),
+                zone: data::models::ZoneType::Z3,
+                severity: data::models::Severity::Medium,
+                risk_score: 55,
+                vulnerabilities_count: 2,
+                services: vec![],
+                open_ports: vec![443, 8080, 9090],
+                credentials: vec![],
+                owner: "IT Department".to_string(),
+                business_purpose: "Mission Planning".to_string(),
+                department: Some("IT".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 85,
+                    last_scan: Some("2024-01-13T11:00:00Z".to_string()),
+                    next_scan: Some("2024-01-14T11:00:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![
+                    data::models::Connection {
+                        target_id: "dji-mavic-3".to_string(),
+                        connection_type: "Control".to_string(),
+                        protocol: "DJI".to_string(),
+                        port: 0,
+                    },
+                    data::models::Connection {
+                        target_id: "flight-controller".to_string(),
+                        connection_type: "Control".to_string(),
+                        protocol: "MAVLink".to_string(),
+                        port: 0,
+                    },
+                    data::models::Connection {
+                        target_id: "sensor-array".to_string(),
+                        connection_type: "Data".to_string(),
+                        protocol: "UDP".to_string(),
+                        port: 0,
+                    }
+                ],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "Server".to_string(),
+                firmware_version: Some("Ubuntu 22.04 LTS".to_string()),
+                manufacturer: Some("Dell".to_string()),
+                location: Some("Data Center".to_string()),
+            },
+            // Z4 - 飞控设备层
+            AssetNode {
+                id: "dji-mavic-3".to_string(),
+                name: "DJI Mavic 3 ...".to_string(),
                 ip_address: "192.168.1.100".to_string(),
                 mac_address: Some("00:11:22:33:44:55".to_string()),
                 zone: data::models::ZoneType::Z4,
@@ -108,8 +296,46 @@ impl TopologyCanvas {
                 services: vec![],
                 open_ports: vec![],
                 credentials: vec![],
-                owner: "Team Alpha".to_string(),
+                owner: "Flight Team".to_string(),
                 business_purpose: "Surveillance".to_string(),
+                department: Some("Security".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 100,
+                    last_scan: Some("2024-01-10T10:30:00Z".to_string()),
+                    next_scan: Some("2024-01-11T10:30:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![
+                    data::models::Connection {
+                        target_id: "emergency-system".to_string(),
+                        connection_type: "Alert".to_string(),
+                        protocol: "Custom".to_string(),
+                        port: 0,
+                    }
+                ],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "UAV".to_string(),
+                firmware_version: Some("v1.5.0".to_string()),
+                manufacturer: Some("DJI".to_string()),
+                location: Some("Sector 7".to_string()),
+            },
+            AssetNode {
+                id: "flight-controller".to_string(),
+                name: "Flight Contr...".to_string(),
+                ip_address: "192.168.1.101".to_string(),
+                mac_address: Some("00:11:22:33:44:56".to_string()),
+                zone: data::models::ZoneType::Z4,
+                severity: data::models::Severity::Low,
+                risk_score: 20,
+                vulnerabilities_count: 1,
+                services: vec![],
+                open_ports: vec![],
+                credentials: vec![],
+                owner: "Flight Team".to_string(),
+                business_purpose: "Autopilot".to_string(),
                 department: Some("Security".to_string()),
                 scan_progress: data::models::ScanProgress {
                     percentage: 100,
@@ -124,23 +350,55 @@ impl TopologyCanvas {
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "UAV".to_string(),
                 firmware_version: Some("v1.5.0".to_string()),
-                manufacturer: Some("DJI".to_string()),
+                manufacturer: Some("Pixhawk".to_string()),
                 location: Some("Sector 7".to_string()),
             },
             AssetNode {
-                id: "gcs-1".to_string(),
-                name: "Ground Control Station".to_string(),
-                ip_address: "192.168.1.1".to_string(),
-                mac_address: Some("AA:BB:CC:DD:EE:FF".to_string()),
-                zone: data::models::ZoneType::Z3,
-                severity: data::models::Severity::Info,
-                risk_score: 10,
+                id: "sensor-array".to_string(),
+                name: "Sensor Array".to_string(),
+                ip_address: "192.168.1.102".to_string(),
+                mac_address: Some("00:11:22:33:44:57".to_string()),
+                zone: data::models::ZoneType::Z4,
+                severity: data::models::Severity::Low,
+                risk_score: 15,
                 vulnerabilities_count: 0,
                 services: vec![],
                 open_ports: vec![],
                 credentials: vec![],
-                owner: "Team Alpha".to_string(),
-                business_purpose: "Flight Control".to_string(),
+                owner: "Flight Team".to_string(),
+                business_purpose: "Telemetry".to_string(),
+                department: Some("Security".to_string()),
+                scan_progress: data::models::ScanProgress {
+                    percentage: 100,
+                    last_scan: Some("2024-01-10T10:30:00Z".to_string()),
+                    next_scan: Some("2024-01-11T10:30:00Z".to_string()),
+                    scan_type: "Full".to_string(),
+                    scanning: false,
+                },
+                compliance_standards: vec![],
+                connections: vec![],
+                status: data::models::AssetStatus::Online,
+                last_seen: "2024-01-13T22:00:00Z".to_string(),
+                asset_type: "UAV".to_string(),
+                firmware_version: Some("v1.5.0".to_string()),
+                manufacturer: Some("Generic".to_string()),
+                location: Some("Sector 7".to_string()),
+            },
+            // Z5 - 安全应急系统
+            AssetNode {
+                id: "emergency-system".to_string(),
+                name: "Emergency Sy...".to_string(),
+                ip_address: "10.0.5.1".to_string(),
+                mac_address: Some("EE:EE:EE:EE:EE:EE".to_string()),
+                zone: data::models::ZoneType::Z5,
+                severity: data::models::Severity::Low,
+                risk_score: 5,
+                vulnerabilities_count: 0,
+                services: vec![],
+                open_ports: vec![],
+                credentials: vec![],
+                owner: "Safety Team".to_string(),
+                business_purpose: "Safety".to_string(),
                 department: Some("Operations".to_string()),
                 scan_progress: data::models::ScanProgress {
                     percentage: 100,
@@ -153,72 +411,10 @@ impl TopologyCanvas {
                 connections: vec![],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
-                asset_type: "GCS".to_string(),
-                firmware_version: Some("v2.3.1".to_string()),
-                manufacturer: Some("Custom".to_string()),
-                location: Some("Control Room".to_string()),
-            },
-            AssetNode {
-                id: "router-1".to_string(),
-                name: "Network Router".to_string(),
-                ip_address: "192.168.1.254".to_string(),
-                mac_address: Some("11:22:33:44:55:66".to_string()),
-                zone: data::models::ZoneType::Z2,
-                severity: data::models::Severity::Low,
-                risk_score: 5,
-                vulnerabilities_count: 0,
-                services: vec![],
-                open_ports: vec![],
-                credentials: vec![],
-                owner: "IT Department".to_string(),
-                business_purpose: "Network Gateway".to_string(),
-                department: Some("IT".to_string()),
-                scan_progress: data::models::ScanProgress {
-                    percentage: 100,
-                    last_scan: Some("2024-01-10T10:30:00Z".to_string()),
-                    next_scan: Some("2024-01-11T10:30:00Z".to_string()),
-                    scan_type: "Full".to_string(),
-                    scanning: false,
-                },
-                compliance_standards: vec![],
-                connections: vec![],
-                status: data::models::AssetStatus::Online,
-                last_seen: "2024-01-13T22:00:00Z".to_string(),
-                asset_type: "Router".to_string(),
-                firmware_version: Some("v3.1.2".to_string()),
-                manufacturer: Some("Cisco".to_string()),
-                location: Some("Server Room".to_string()),
-            },
-            AssetNode {
-                id: "server-1".to_string(),
-                name: "Data Server".to_string(),
-                ip_address: "192.168.2.100".to_string(),
-                mac_address: Some("CC:DD:EE:FF:00:11".to_string()),
-                zone: data::models::ZoneType::Z1,
-                severity: data::models::Severity::High,
-                risk_score: 75,
-                vulnerabilities_count: 5,
-                services: vec![],
-                open_ports: vec![],
-                credentials: vec![],
-                owner: "IT Department".to_string(),
-                business_purpose: "Data Storage".to_string(),
-                department: Some("IT".to_string()),
-                scan_progress: data::models::ScanProgress {
-                    percentage: 80,
-                    last_scan: Some("2024-01-10T10:30:00Z".to_string()),
-                    next_scan: Some("2024-01-11T10:30:00Z".to_string()),
-                    scan_type: "Full".to_string(),
-                    scanning: true,
-                },
-                compliance_standards: vec![],
-                connections: vec![],
-                status: data::models::AssetStatus::Online,
-                last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "Server".to_string(),
-                firmware_version: Some("Ubuntu 22.04".to_string()),
-                manufacturer: Some("Dell".to_string()),
-                location: Some("Data Center".to_string()),
+                firmware_version: Some("v4.0.0".to_string()),
+                manufacturer: Some("SafeGuard".to_string()),
+                location: Some("Safety Bunker".to_string()),
             },
         ]
     }
@@ -253,8 +449,8 @@ impl TopologyCanvas {
                 zone: data::models::ZoneType::Z1,
                 name: "Z1".to_string(),
                 description: "地面指挥中心".to_string(),
-                icon: gpui_component::IconName::Globe,
-                bg_color: 0xe3f2fd,  // 蓝色
+                icon: gpui_component::IconName::CircleCheck,
+                bg_color: 0xf0f7ff,  // 浅蓝色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -265,8 +461,8 @@ impl TopologyCanvas {
                 zone: data::models::ZoneType::Z2,
                 name: "Z2".to_string(),
                 description: "通信网关层".to_string(),
-                icon: gpui_component::IconName::Network,
-                bg_color: 0xf1f8e9,  // 绿色
+                icon: gpui_component::IconName::CircleCheck,
+                bg_color: 0xf0fff4,  // 浅绿色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -277,8 +473,8 @@ impl TopologyCanvas {
                 zone: data::models::ZoneType::Z3,
                 name: "Z3".to_string(),
                 description: "任务控制层".to_string(),
-                icon: gpui_component::IconName::Settings,
-                bg_color: 0xfce4ec,  // 粉色
+                icon: gpui_component::IconName::CircleCheck,
+                bg_color: 0xf5f3ff,  // 浅紫色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -289,8 +485,8 @@ impl TopologyCanvas {
                 zone: data::models::ZoneType::Z4,
                 name: "Z4".to_string(),
                 description: "飞控设备层".to_string(),
-                icon: gpui_component::IconName::HardDrive,
-                bg_color: 0xfff3e0,  // 橙色
+                icon: gpui_component::IconName::CircleCheck,
+                bg_color: 0xfffaf0,  // 浅橙色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -300,9 +496,9 @@ impl TopologyCanvas {
             ZoneLayout {
                 zone: data::models::ZoneType::Z5,
                 name: "Z5".to_string(),
-                description: "安全应急系统".to_string(),
-                icon: gpui_component::IconName::TriangleAlert,
-                bg_color: 0xf3e5f5,  // 紫色
+                description: "安全紧急系统".to_string(),
+                icon: gpui_component::IconName::CircleCheck,
+                bg_color: 0xfff5f5,  // 浅红色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -377,24 +573,48 @@ impl TopologyCanvas {
         node_idx: usize,
         total_nodes: usize,
     ) -> NodePosition {
-        let padding = 20.0;
+        let x = zone_x + zone_width / 2.0;
+        let content_height = zone_height - 100.0;
+        let start_y = zone_y + 50.0;
         
-        // 根据节点数量选择网格布局
-        let cols = if total_nodes > 4 { 2 } else { 1 };
-        let col = node_idx % cols;
-        let row = node_idx / cols;
-        
-        let col_width = (zone_width - 2.0 * padding) / cols as f32;
-        let row_height = if total_nodes > 0 {
-            (zone_height - 2.0 * padding) / ((total_nodes + cols - 1) / cols) as f32
-        } else {
-            zone_height / 2.0
-        };
-        
-        let x = zone_x + padding + col as f32 * col_width + col_width / 2.0;
-        let y = zone_y + padding + row as f32 * row_height + row_height / 2.0;
-        
-        NodePosition { x, y }
+        match total_nodes {
+            1 => {
+                // 居中
+                NodePosition {
+                    x,
+                    y: start_y + content_height / 2.0,
+                }
+            }
+            2 => {
+                // 一个偏上，一个偏下
+                let y = if node_idx == 0 {
+                    start_y + content_height * 0.3
+                } else {
+                    start_y + content_height * 0.7
+                };
+                NodePosition { x, y }
+            }
+            3 => {
+                // V 字形布局
+                let y = match node_idx {
+                    0 => start_y + content_height * 0.2, // 最上
+                    1 => start_y + content_height * 0.5, // 中间
+                    2 => start_y + content_height * 0.8, // 最下
+                    _ => start_y + content_height / 2.0,
+                };
+                NodePosition { x, y }
+            }
+            _ => {
+                // 网格布局
+                let rows = (total_nodes as f32).sqrt().ceil() as usize;
+                let row = node_idx / rows;
+                let row_height = content_height / rows as f32;
+                NodePosition {
+                    x,
+                    y: start_y + row as f32 * row_height + row_height / 2.0,
+                }
+            }
+        }
     }
 
     #[allow(dead_code)]
@@ -537,23 +757,23 @@ impl Render for TopologyCanvas {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // 初次渲染时计算布局
         if self.node_positions.is_empty() && !self.nodes.is_empty() {
-            self.calculate_layout(800.0, 600.0);
+            self.calculate_layout(1200.0, 600.0);
         }
 
         let zones = self.zones_layout.clone();
+        let nodes = self.nodes.clone();
         
-        v_flex()
+        div()
+            .relative()
             .flex_1()
             .bg(rgb(BG_CARD))
             .size_full()
-            .gap_0()
             .overflow_hidden()
             .child(
-                // 5 个分区列
+                // Layer 1: Zone backgrounds and headers
                 h_flex()
-                    .flex_1()
-                    .gap_1()
-                    .p_4()
+                    .size_full()
+                    .gap_0()
                     .children(
                         zones.iter().map(|zone_layout| {
                             let zone_assets: Vec<AssetNode> = self.nodes
@@ -571,7 +791,75 @@ impl Render for TopologyCanvas {
                                 zone_layout.icon.clone(),
                             );
                             
-                            render_topology_zone(&zone).into_any_element()
+                            render_topology_zone_bg(&zone).into_any_element()
+                        })
+                    )
+            )
+            .child(
+                // Layer 2: Connections
+                {
+                    let node_positions = self.node_positions.clone();
+                    let nodes = self.nodes.clone();
+                    
+                    canvas(
+                        move |_bounds, _window, _cx| {
+                            // Prepaint: collect connection paths
+                            let mut paths = Vec::new();
+                            for node in &nodes {
+                                if let Some(start_pos) = node_positions.get(&node.id) {
+                                    for conn in &node.connections {
+                                        if let Some(end_pos) = node_positions.get(&conn.target_id) {
+                                            let start = Point::new(
+                                                px(start_pos.x + 24.0),
+                                                px(start_pos.y + 24.0),
+                                            );
+                                            let end = Point::new(
+                                                px(end_pos.x + 24.0),
+                                                px(end_pos.y + 24.0),
+                                            );
+                                            paths.push((start, end));
+                                        }
+                                    }
+                                }
+                            }
+                            paths
+                        },
+                        move |bounds, paths, window, _cx| {
+                            // Paint: draw connection lines
+                            for (start, end) in paths {
+                                let start_abs = Point::new(
+                                    bounds.origin.x + start.x,
+                                    bounds.origin.y + start.y,
+                                );
+                                let end_abs = Point::new(
+                                    bounds.origin.x + end.x,
+                                    bounds.origin.y + end.y,
+                                );
+                                
+                                let mut path_builder = PathBuilder::stroke(px(1.5));
+                                path_builder = path_builder.dash_array(&[px(4.0), px(2.0)]);
+                                path_builder.move_to(start_abs);
+                                path_builder.line_to(end_abs);
+                                
+                                if let Ok(path) = path_builder.build() {
+                                    window.paint_path(path, rgb(0xcbd5e1));
+                                }
+                            }
+                        },
+                    )
+                    .absolute()
+                    .size_full()
+                }
+            )
+            .child(
+                // Layer 3: Asset nodes at absolute positions
+                div()
+                    .absolute()
+                    .size_full()
+                    .children(
+                        nodes.iter().filter_map(|node| {
+                            let pos = self.node_positions.get(&node.id)?;
+                            Some(render_asset_node_at(node, pos))
                         })
                     )
             )

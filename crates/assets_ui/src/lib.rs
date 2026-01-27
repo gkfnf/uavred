@@ -1,18 +1,18 @@
 use gpui::*;
 use gpui_component::{h_flex, label::Label, v_flex, IconName};
 
-mod components;
 mod asset_detail_panel;
-mod topology_canvas;
+mod components;
 mod events;
+mod topology_canvas;
 
 pub use asset_detail_panel::AssetDetailPanel;
-pub use topology_canvas::{TopologyCanvas, AssetSelectedEvent};
 pub use components::*;
 pub use events::AssetActionEvent;
+pub use topology_canvas::{AssetSelectedEvent, TopologyCanvas};
 
-use ui::theme::*;
 use data::models::AssetNode;
+use ui::theme::*;
 
 /// AssetsPanel - Top-level asset management container
 ///
@@ -40,27 +40,27 @@ impl AssetsPanel {
 
         // Subscribe to asset selection events from topology canvas
         let asset_detail_panel_clone = asset_detail_panel.clone();
-        let subscription = cx.subscribe(
-            &topology_canvas,
-            move |this, topology, event, cx| {
-                let AssetSelectedEvent::NodeSelected(node_id) = event;
-                // Find the node in the topology canvas and clone it
-                let node = topology.read(cx).nodes.iter()
-                    .find(|n| n.id == *node_id)
-                    .cloned();
-                
-                if let Some(node) = node {
-                    // Update detail panel with selected node
-                    asset_detail_panel_clone.update(cx, |panel, cx| {
-                        panel.set_node(node.clone(), cx);
-                    });
-                    // Update local state
-                    this.selected_asset = Some(node);
-                    this.details_expanded = true;
-                    cx.notify();
-                }
-            },
-        );
+        let subscription = cx.subscribe(&topology_canvas, move |this, topology, event, cx| {
+            let AssetSelectedEvent::NodeSelected(node_id) = event;
+            // Find the node in the topology canvas and clone it
+            let node = topology
+                .read(cx)
+                .nodes
+                .iter()
+                .find(|n| n.id == *node_id)
+                .cloned();
+
+            if let Some(node) = node {
+                // Update detail panel with selected node
+                asset_detail_panel_clone.update(cx, |panel, cx| {
+                    panel.set_node(node.clone(), cx);
+                });
+                // Update local state
+                this.selected_asset = Some(node);
+                this.details_expanded = true;
+                cx.notify();
+            }
+        });
 
         Self {
             topology_expanded: true,
@@ -103,22 +103,23 @@ impl Render for AssetsPanel {
                             .p_3()
                             .items_center()
                             .bg(rgb(BG_PRIMARY))
-                            .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                                this.toggle_topology(cx);
-                            }))
-                            .cursor_pointer()
-                            .child(
-                                if self.topology_expanded {
-                                    IconName::ChevronDown
-                                } else {
-                                    IconName::ChevronRight
-                                }
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(|this, _event, _window, cx| {
+                                    this.toggle_topology(cx);
+                                }),
                             )
+                            .cursor_pointer()
+                            .child(if self.topology_expanded {
+                                IconName::ChevronDown
+                            } else {
+                                IconName::ChevronRight
+                            })
                             .child(IconName::Network)
                             .child(
                                 Label::new("网络拓扑 - 业务层级视图")
                                     .text_sm()
-                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .font_weight(FontWeight::SEMIBOLD),
                             )
                             .child(div().flex_1())
                             .child(
@@ -130,49 +131,91 @@ impl Render for AssetsPanel {
                                         h_flex()
                                             .gap_1()
                                             .items_center()
-                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0x10b981)))
-                                            .child(Label::new("低危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                            .child(
+                                                div()
+                                                    .size(px(8.0))
+                                                    .rounded_full()
+                                                    .bg(rgb(0x10b981)),
+                                            )
+                                            .child(
+                                                Label::new("低危")
+                                                    .text_xs()
+                                                    .text_color(rgb(TEXT_SECONDARY)),
+                                            ),
                                     )
                                     .child(
                                         h_flex()
                                             .gap_1()
                                             .items_center()
-                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xfbbf24)))
-                                            .child(Label::new("中危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                            .child(
+                                                div()
+                                                    .size(px(8.0))
+                                                    .rounded_full()
+                                                    .bg(rgb(0xfbbf24)),
+                                            )
+                                            .child(
+                                                Label::new("中危")
+                                                    .text_xs()
+                                                    .text_color(rgb(TEXT_SECONDARY)),
+                                            ),
                                     )
                                     .child(
                                         h_flex()
                                             .gap_1()
                                             .items_center()
-                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xf97316)))
-                                            .child(Label::new("高危").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                            .child(
+                                                div()
+                                                    .size(px(8.0))
+                                                    .rounded_full()
+                                                    .bg(rgb(0xf97316)),
+                                            )
+                                            .child(
+                                                Label::new("高危")
+                                                    .text_xs()
+                                                    .text_color(rgb(TEXT_SECONDARY)),
+                                            ),
                                     )
                                     .child(
                                         h_flex()
                                             .gap_1()
                                             .items_center()
-                                            .child(div().size(px(8.0)).rounded_full().bg(rgb(0xef4444)))
-                                            .child(Label::new("严重").text_xs().text_color(rgb(TEXT_SECONDARY)))
-                                    )
+                                            .child(
+                                                div()
+                                                    .size(px(8.0))
+                                                    .rounded_full()
+                                                    .bg(rgb(0xef4444)),
+                                            )
+                                            .child(
+                                                Label::new("严重")
+                                                    .text_xs()
+                                                    .text_color(rgb(TEXT_SECONDARY)),
+                                            ),
+                                    ),
                             )
                             .child(
                                 h_flex()
                                     .gap_2()
                                     .items_center()
                                     .ml_4()
-                                    .child(Label::new("8 资产").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    .child(
+                                        Label::new("8 资产")
+                                            .text_xs()
+                                            .text_color(rgb(TEXT_SECONDARY)),
+                                    )
                                     .child(div().w(px(1.0)).h(px(12.0)).bg(rgb(BORDER_COLOR)))
-                                    .child(Label::new("19 连接").text_xs().text_color(rgb(TEXT_SECONDARY)))
+                                    .child(
+                                        Label::new("19 连接")
+                                            .text_xs()
+                                            .text_color(rgb(TEXT_SECONDARY)),
+                                    ),
                             )
-                            .child(IconName::ChevronDown)
+                            .child(IconName::ChevronDown),
                     )
-                    .child(
-                        if self.topology_expanded {
-                            self.topology_canvas.clone().into_any_element()
-                        } else {
-                            div().into_any_element()
-                        }
-                    )
+                    .child(if self.topology_expanded {
+                        self.topology_canvas.clone().into_any_element()
+                    } else {
+                        div().into_any_element()
+                    }),
             )
             .child(
                 // Row 2: Asset Details
@@ -186,43 +229,42 @@ impl Render for AssetsPanel {
                             .p_3()
                             .items_center()
                             .bg(rgb(BG_PRIMARY))
-                            .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                                this.toggle_details(cx);
-                            }))
-                            .cursor_pointer()
-                            .child(
-                                if self.details_expanded {
-                                    IconName::ChevronDown
-                                } else {
-                                    IconName::ChevronRight
-                                }
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(|this, _event, _window, cx| {
+                                    this.toggle_details(cx);
+                                }),
                             )
+                            .cursor_pointer()
+                            .child(if self.details_expanded {
+                                IconName::ChevronDown
+                            } else {
+                                IconName::ChevronRight
+                            })
                             .child(IconName::File)
                             .child(
                                 Label::new("资产详情")
                                     .text_sm()
-                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .font_weight(FontWeight::SEMIBOLD),
+                            ),
+                    )
+                    .child(if self.details_expanded && self.selected_asset.is_some() {
+                        self.asset_detail_panel.clone().into_any_element()
+                    } else if self.details_expanded && self.selected_asset.is_none() {
+                        div()
+                            .flex_1()
+                            .items_center()
+                            .justify_center()
+                            .p_6()
+                            .child(
+                                Label::new("选择一个资产来查看详情")
+                                    .text_sm()
+                                    .text_color(rgb(TEXT_MUTED)),
                             )
-                    )
-                    .child(
-                        if self.details_expanded && self.selected_asset.is_some() {
-                            self.asset_detail_panel.clone().into_any_element()
-                        } else if self.details_expanded && self.selected_asset.is_none() {
-                            div()
-                                .flex_1()
-                                .items_center()
-                                .justify_center()
-                                .p_6()
-                                .child(
-                                    Label::new("选择一个资产来查看详情")
-                                        .text_sm()
-                                        .text_color(rgb(TEXT_MUTED))
-                                )
-                                .into_any_element()
-                        } else {
-                            div().into_any_element()
-                        }
-                    )
+                            .into_any_element()
+                    } else {
+                        div().into_any_element()
+                    }),
             )
     }
 }

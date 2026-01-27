@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use gpui_component::h_flex;
 use ui::theme::*;
 
+use crate::components::{render_asset_node_at, render_topology_zone_bg, TopologyZone};
 use data::models::{AssetNode, Connection};
-use crate::components::{TopologyZone, render_topology_zone_bg, render_asset_node_at};
 
 impl EventEmitter<AssetSelectedEvent> for TopologyCanvas {}
 
@@ -27,15 +27,15 @@ pub struct NodePosition {
 #[derive(Clone)]
 pub struct ZoneLayout {
     pub zone: data::models::ZoneType,
-    pub name: String,              // 分区名称: "地面指挥中心", "通信网关层" 等
-    pub description: String,        // 分区描述
+    pub name: String,        // 分区名称: "地面指挥中心", "通信网关层" 等
+    pub description: String, // 分区描述
     pub icon: gpui_component::IconName,
-    pub bg_color: u32,             // 分区背景色
-    pub x: f32,                    // 分区在画布中的 x 坐标
-    pub y: f32,                    // 分区在画布中的 y 坐标
-    pub width: f32,                // 分区宽度
-    pub height: f32,               // 分区高度
-    pub asset_ids: Vec<String>,    // 该分区的资产 ID 列表
+    pub bg_color: u32,          // 分区背景色
+    pub x: f32,                 // 分区在画布中的 x 坐标
+    pub y: f32,                 // 分区在画布中的 y 坐标
+    pub width: f32,             // 分区宽度
+    pub height: f32,            // 分区高度
+    pub asset_ids: Vec<String>, // 该分区的资产 ID 列表
 }
 
 // /// 连接线样式 (Reserved for future use when implementing status-based colors)
@@ -45,7 +45,7 @@ pub struct ZoneLayout {
 //     pub is_dashed: bool,
 //     pub width: f32,
 // }
-// 
+//
 // impl Default for ConnectionStyle {
 //     fn default() -> Self {
 //         Self {
@@ -75,17 +75,17 @@ pub enum AssetSelectedEvent {
 pub struct TopologyCanvas {
     // 数据
     pub nodes: Vec<AssetNode>,
-    
+
     // 布局数据
-    zones_layout: Vec<ZoneLayout>,  // 5 个分区的布局信息
-    node_positions: HashMap<String, NodePosition>,  // 节点位置映射
-    
+    zones_layout: Vec<ZoneLayout>,                 // 5 个分区的布局信息
+    node_positions: HashMap<String, NodePosition>, // 节点位置映射
+
     // 交互状态
     selected_node_id: Option<String>,
-    
+
     // 画布状态
     canvas_bounds: Option<Bounds<Pixels>>,
-    
+
     // 显示参数 (kept for future pan/zoom implementation)
     scale: f32,
     offset_x: f32,
@@ -108,7 +108,7 @@ impl TopologyCanvas {
             offset_y: 0.0,
             drag_state: None,
         };
-        
+
         // 初始布局计算 (使用默认 canvas 宽度)
         canvas.calculate_layout(800.0, 600.0);
         canvas
@@ -140,14 +140,12 @@ impl TopologyCanvas {
                     scanning: false,
                 },
                 compliance_standards: vec![],
-                connections: vec![
-                    data::models::Connection {
-                        target_id: "telemetry-service".to_string(),
-                        connection_type: "Data".to_string(),
-                        protocol: "MAVLink".to_string(),
-                        port: 5760,
-                    }
-                ],
+                connections: vec![data::models::Connection {
+                    target_id: "telemetry-service".to_string(),
+                    connection_type: "Data".to_string(),
+                    protocol: "MAVLink".to_string(),
+                    port: 5760,
+                }],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "GCS".to_string(),
@@ -179,14 +177,12 @@ impl TopologyCanvas {
                     scanning: false,
                 },
                 compliance_standards: vec![],
-                connections: vec![
-                    data::models::Connection {
-                        target_id: "mission-control-server".to_string(),
-                        connection_type: "Data".to_string(),
-                        protocol: "TCP".to_string(),
-                        port: 8080,
-                    }
-                ],
+                connections: vec![data::models::Connection {
+                    target_id: "mission-control-server".to_string(),
+                    connection_type: "Data".to_string(),
+                    protocol: "TCP".to_string(),
+                    port: 8080,
+                }],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "Router".to_string(),
@@ -217,14 +213,12 @@ impl TopologyCanvas {
                     scanning: false,
                 },
                 compliance_standards: vec![],
-                connections: vec![
-                    data::models::Connection {
-                        target_id: "mission-control-server".to_string(),
-                        connection_type: "Data".to_string(),
-                        protocol: "TCP".to_string(),
-                        port: 8080,
-                    }
-                ],
+                connections: vec![data::models::Connection {
+                    target_id: "mission-control-server".to_string(),
+                    connection_type: "Data".to_string(),
+                    protocol: "TCP".to_string(),
+                    port: 8080,
+                }],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "Router".to_string(),
@@ -274,7 +268,7 @@ impl TopologyCanvas {
                         connection_type: "Data".to_string(),
                         protocol: "UDP".to_string(),
                         port: 0,
-                    }
+                    },
                 ],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
@@ -307,14 +301,12 @@ impl TopologyCanvas {
                     scanning: false,
                 },
                 compliance_standards: vec![],
-                connections: vec![
-                    data::models::Connection {
-                        target_id: "emergency-system".to_string(),
-                        connection_type: "Alert".to_string(),
-                        protocol: "Custom".to_string(),
-                        port: 0,
-                    }
-                ],
+                connections: vec![data::models::Connection {
+                    target_id: "emergency-system".to_string(),
+                    connection_type: "Alert".to_string(),
+                    protocol: "Custom".to_string(),
+                    port: 0,
+                }],
                 status: data::models::AssetStatus::Online,
                 last_seen: "2024-01-13T22:00:00Z".to_string(),
                 asset_type: "UAV".to_string(),
@@ -450,7 +442,7 @@ impl TopologyCanvas {
                 name: "Z1".to_string(),
                 description: "地面指挥中心".to_string(),
                 icon: gpui_component::IconName::CircleCheck,
-                bg_color: 0xf0f7ff,  // 浅蓝色
+                bg_color: 0xf0f7ff, // 浅蓝色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -462,7 +454,7 @@ impl TopologyCanvas {
                 name: "Z2".to_string(),
                 description: "通信网关层".to_string(),
                 icon: gpui_component::IconName::CircleCheck,
-                bg_color: 0xf0fff4,  // 浅绿色
+                bg_color: 0xf0fff4, // 浅绿色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -474,7 +466,7 @@ impl TopologyCanvas {
                 name: "Z3".to_string(),
                 description: "任务控制层".to_string(),
                 icon: gpui_component::IconName::CircleCheck,
-                bg_color: 0xf5f3ff,  // 浅紫色
+                bg_color: 0xf5f3ff, // 浅紫色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -486,7 +478,7 @@ impl TopologyCanvas {
                 name: "Z4".to_string(),
                 description: "飞控设备层".to_string(),
                 icon: gpui_component::IconName::CircleCheck,
-                bg_color: 0xfffaf0,  // 浅橙色
+                bg_color: 0xfffaf0, // 浅橙色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -498,7 +490,7 @@ impl TopologyCanvas {
                 name: "Z5".to_string(),
                 description: "安全紧急系统".to_string(),
                 icon: gpui_component::IconName::CircleCheck,
-                bg_color: 0xfff5f5,  // 浅红色
+                bg_color: 0xfff5f5, // 浅红色
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -513,13 +505,13 @@ impl TopologyCanvas {
         if canvas_width <= 0.0 || canvas_height <= 0.0 {
             return;
         }
-        
+
         // 1. 清空旧位置数据
         self.node_positions.clear();
         for zone in &mut self.zones_layout {
             zone.asset_ids.clear();
         }
-        
+
         // 2. 分配每个节点到对应的分区
         for node in &self.nodes {
             for zone in &mut self.zones_layout {
@@ -529,26 +521,26 @@ impl TopologyCanvas {
                 }
             }
         }
-        
+
         // 3. 计算分区的位置和大小
         let zone_count = 5;
         let zone_width = canvas_width / zone_count as f32;
         let zone_height = canvas_height;
-        let header_height = 80.0;  // 分区头部高度
-        
+        let header_height = 80.0; // 分区头部高度
+
         for (idx, zone) in self.zones_layout.iter_mut().enumerate() {
             zone.x = idx as f32 * zone_width;
             zone.y = 0.0;
             zone.width = zone_width;
             zone.height = zone_height;
         }
-        
+
         // 4. 计算每个节点在其分区内的位置
         for zone in &self.zones_layout {
             let asset_count = zone.asset_ids.len();
-            let inner_width = zone.width - 40.0;   // 分区左右 padding
-            let inner_height = zone.height - header_height - 40.0;  // 分区上下 padding
-            
+            let inner_width = zone.width - 40.0; // 分区左右 padding
+            let inner_height = zone.height - header_height - 40.0; // 分区上下 padding
+
             for (node_idx, node_id) in zone.asset_ids.iter().enumerate() {
                 let node_pos = self.calculate_node_position_in_zone(
                     zone.x,
@@ -576,7 +568,7 @@ impl TopologyCanvas {
         let x = zone_x + zone_width / 2.0;
         let content_height = zone_height - 100.0;
         let start_y = zone_y + 50.0;
-        
+
         match total_nodes {
             1 => {
                 // 居中
@@ -702,12 +694,12 @@ impl TopologyCanvas {
                         let hit_radius = px(node_size / 2.0);
                         let node_screen_x = px(pos.x * self.scale + self.offset_x);
                         let node_screen_y = px(pos.y * self.scale + self.offset_y);
-                        
+
                         let hit_rect = Bounds::new(
                             Point::new(node_screen_x - hit_radius, node_screen_y - hit_radius),
                             Size::new(hit_radius * 2.0, hit_radius * 2.0),
                         );
-                        
+
                         if hit_rect.contains(&local_pos) {
                             self.selected_node_id = Some(node.id.clone());
                             self.drag_state = Some((node.id.clone(), local_pos));
@@ -751,8 +743,6 @@ impl TopologyCanvas {
     }
 }
 
-
-
 impl Render for TopologyCanvas {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // 初次渲染时计算布局
@@ -762,7 +752,7 @@ impl Render for TopologyCanvas {
 
         let zones = self.zones_layout.clone();
         let nodes = self.nodes.clone();
-        
+
         div()
             .relative()
             .flex_1()
@@ -774,33 +764,32 @@ impl Render for TopologyCanvas {
                 h_flex()
                     .size_full()
                     .gap_0()
-                    .children(
-                        zones.iter().map(|zone_layout| {
-                            let zone_assets: Vec<AssetNode> = self.nodes
-                                .iter()
-                                .filter(|n| n.zone == zone_layout.zone)
-                                .cloned()
-                                .collect();
-                            
-                            let zone = TopologyZone::new(
-                                zone_layout.zone.clone(),
-                                zone_assets,
-                                zone_layout.name.clone(),
-                                zone_layout.description.clone(),
-                                zone_layout.bg_color,
-                                zone_layout.icon.clone(),
-                            );
-                            
-                            render_topology_zone_bg(&zone).into_any_element()
-                        })
-                    )
+                    .children(zones.iter().map(|zone_layout| {
+                        let zone_assets: Vec<AssetNode> = self
+                            .nodes
+                            .iter()
+                            .filter(|n| n.zone == zone_layout.zone)
+                            .cloned()
+                            .collect();
+
+                        let zone = TopologyZone::new(
+                            zone_layout.zone.clone(),
+                            zone_assets,
+                            zone_layout.name.clone(),
+                            zone_layout.description.clone(),
+                            zone_layout.bg_color,
+                            zone_layout.icon.clone(),
+                        );
+
+                        render_topology_zone_bg(&zone).into_any_element()
+                    })),
             )
             .child(
                 // Layer 2: Connections
                 {
                     let node_positions = self.node_positions.clone();
                     let nodes = self.nodes.clone();
-                    
+
                     canvas(
                         move |_bounds, _window, _cx| {
                             // Prepaint: collect connection paths
@@ -831,16 +820,14 @@ impl Render for TopologyCanvas {
                                     bounds.origin.x + start.x,
                                     bounds.origin.y + start.y,
                                 );
-                                let end_abs = Point::new(
-                                    bounds.origin.x + end.x,
-                                    bounds.origin.y + end.y,
-                                );
-                                
+                                let end_abs =
+                                    Point::new(bounds.origin.x + end.x, bounds.origin.y + end.y);
+
                                 let mut path_builder = PathBuilder::stroke(px(1.5));
                                 path_builder = path_builder.dash_array(&[px(4.0), px(2.0)]);
                                 path_builder.move_to(start_abs);
                                 path_builder.line_to(end_abs);
-                                
+
                                 if let Ok(path) = path_builder.build() {
                                     window.paint_path(path, rgb(0xcbd5e1));
                                 }
@@ -849,22 +836,23 @@ impl Render for TopologyCanvas {
                     )
                     .absolute()
                     .size_full()
-                }
+                },
             )
             .child(
                 // Layer 3: Asset nodes at absolute positions
                 div()
                     .absolute()
                     .size_full()
-                    .children(
-                        nodes.iter().filter_map(|node| {
-                            let pos = self.node_positions.get(&node.id)?;
-                            Some(render_asset_node_at(node, pos))
-                        })
-                    )
+                    .children(nodes.iter().filter_map(|node| {
+                        let pos = self.node_positions.get(&node.id)?;
+                        Some(render_asset_node_at(node, pos))
+                    })),
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(|this, event, window, cx| {
-                this.handle_mouse_down(event, window, cx);
-            }))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, event, window, cx| {
+                    this.handle_mouse_down(event, window, cx);
+                }),
+            )
     }
 }

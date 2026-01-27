@@ -2,10 +2,13 @@ use gpui::*;
 use gpui_component::{h_flex, label::Label};
 use ui::theme::*;
 
-pub fn render_info_card(label: impl Into<SharedString>, value: impl Into<SharedString>) -> AnyElement {
+pub fn render_info_card(
+    label: impl Into<SharedString>,
+    value: impl Into<SharedString>,
+) -> AnyElement {
     let label: SharedString = label.into();
     let value: SharedString = value.into();
-    
+
     h_flex()
         .gap_3()
         .p_2()

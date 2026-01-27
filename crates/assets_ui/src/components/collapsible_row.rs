@@ -26,9 +26,13 @@ impl CollapsibleRowState {
     }
 }
 
-pub fn render_collapsible_row_header(title: impl Into<SharedString>, icon: IconName, is_expanded: bool) -> impl IntoElement {
+pub fn render_collapsible_row_header(
+    title: impl Into<SharedString>,
+    icon: IconName,
+    is_expanded: bool,
+) -> impl IntoElement {
     let title: SharedString = title.into();
-    
+
     h_flex()
         .gap_2()
         .p_3()
@@ -36,17 +40,15 @@ pub fn render_collapsible_row_header(title: impl Into<SharedString>, icon: IconN
         .border_color(rgb(BORDER_COLOR))
         .bg(rgb(BG_PRIMARY))
         .items_center()
-        .child(
-            if is_expanded {
-                IconName::ChevronDown
-            } else {
-                IconName::ChevronRight
-            }
-        )
+        .child(if is_expanded {
+            IconName::ChevronDown
+        } else {
+            IconName::ChevronRight
+        })
         .child(icon)
         .child(
             Label::new(title)
                 .text_sm()
-                .font_weight(FontWeight::SEMIBOLD)
+                .font_weight(FontWeight::SEMIBOLD),
         )
 }

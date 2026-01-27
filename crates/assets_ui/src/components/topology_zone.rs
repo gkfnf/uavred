@@ -1,7 +1,7 @@
+use data::models::{AssetNode, ZoneType};
 use gpui::*;
-use gpui_component::{label::Label, v_flex, h_flex, IconName};
+use gpui_component::{h_flex, label::Label, v_flex, Icon, IconName, Sizable};
 use ui::theme::*;
-use data::models::{ZoneType, AssetNode};
 
 #[derive(Clone)]
 pub struct TopologyZone {
@@ -33,28 +33,20 @@ impl TopologyZone {
     }
 
     fn asset_count_text(&self) -> String {
-        format!("{}", self.assets.len())
-    }
-
-    fn asset_label_text(&self) -> &'static str {
-        if self.assets.len() == 1 {
-            "资产"
-        } else {
-            "资产"
-        }
+        format!("{} 资产", self.assets.len())
     }
 }
 
-pub fn render_topology_zone(zone: &TopologyZone) -> impl IntoElement {
+pub fn render_topology_zone_bg(zone: &TopologyZone) -> impl IntoElement {
+    let zone_color = get_zone_base_color(&zone.zone);
+
     v_flex()
         .flex_1()
         .size_full()
         .gap_0()
-        .rounded_lg()
         .bg(rgb(zone.bg_color))
-        .border_1()
+        .border_r_1()
         .border_color(rgb(BORDER_COLOR))
-        .overflow_hidden()
         .child(
             // 分区卡片头
             h_flex()
@@ -62,125 +54,145 @@ pub fn render_topology_zone(zone: &TopologyZone) -> impl IntoElement {
                 .w_full()
                 .gap_2()
                 .p_3()
-                .bg(rgb(BG_PRIMARY))
-                .border_b_1()
-                .border_color(rgb(BORDER_COLOR))
                 .items_center()
                 .child(
-                    // 区域图标
-                    zone.icon.clone()
+                    // 区域图标 (带 Zx 文字的六边形)
+                    div()
+                        .relative()
+                        .child(
+                            Icon::new(IconName::CircleCheck)
+                                .with_size(px(28.0))
+                                .text_color(rgb(zone_color)),
+                        )
+                        .child(
+                            div()
+                                .absolute()
+                                .size_full()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .child(
+                                    Label::new(zone.name.clone())
+                                        .text_xs()
+                                        .font_weight(FontWeight::BOLD)
+                                        .text_color(rgb(zone_color)),
+                                ),
+                        ),
                 )
                 .child(
-                    // 区域标签和描述
-                    v_flex()
-                        .gap_1()
-                        .flex_1()
-                        .child(
-                            Label::new(zone.name.clone())
-                                .text_sm()
-                                .font_weight(FontWeight::SEMIBOLD)
-                        )
-                        .child(
-                            Label::new(zone.description.clone())
-                                .text_xs()
-                                .text_color(rgb(TEXT_MUTED))
-                        )
+                    // 区域描述
+                    Label::new(zone.description.clone())
+                        .text_xs()
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(rgb(TEXT_PRIMARY)),
                 )
-                .child(
-                    // 资产数量
-                    v_flex()
-                        .items_center()
-                        .justify_center()
-                        .gap_0()
-                        .child(
-                            Label::new(zone.asset_count_text())
-                                .text_sm()
-                                .font_weight(FontWeight::SEMIBOLD)
-                        )
-                        .child(
-                            Label::new(zone.asset_label_text())
-                                .text_xs()
-                                .text_color(rgb(TEXT_MUTED))
-                        )
-                )
+                .child(div().flex_1())
                 .child(
                     // 添加按钮
                     div()
                         .text_center()
-                        .text_sm()
-                        .text_color(rgb(ACCENT_BLUE))
+                        .text_lg()
+                        .text_color(rgb(zone_color))
                         .cursor_pointer()
-                        .child("+")
-                )
+                        .child("+"),
+                ),
         )
         .child(
-            // 分区内容区域 (资产节点) - 占据剩余所有空间
-            v_flex()
-                .flex_1()
-                .size_full()
-                .p_4()
-                .gap_3()
-                .items_center()
-                .justify_center()
-                .children(
-                    zone.assets.iter().map(|asset| {
-                        render_asset_node(asset)
-                    })
-                )
+            // 资产数量统计
+            div().px_3().pb_2().child(
+                Label::new(zone.asset_count_text())
+                    .text_xs()
+                    .text_color(rgb(TEXT_SECONDARY)),
+            ),
         )
 }
 
-fn render_asset_node(node: &AssetNode) -> impl IntoElement {
+pub fn render_asset_node_at(
+    node: &AssetNode,
+    pos: &crate::topology_canvas::NodePosition,
+) -> impl IntoElement {
     let node_color = get_asset_color(&node.asset_type);
-    let severity_rgb = get_severity_color(&node.severity);
-    
-    v_flex()
-        .items_center()
-        .gap_2()
-        .child(
-            h_flex()
-                .items_center()
-                .justify_center()
-                // 外圈: 进度环效果
-                .w(px(56.0))
-                .h(px(56.0))
-                .rounded_full()
-                .border_2()
-                .border_color(rgb(severity_rgb))
-                // 内圈: 资产颜色
-                .child(
-                    div()
-                        .w(px(44.0))
-                        .h(px(44.0))
-                        .rounded_full()
-                        .bg(rgb(node_color))
-                        .border_2()
-                        .border_color(rgb(0xffffff))
-                )
-        )
-        .child(
-            Label::new(node.name.clone())
-                .text_xs()
-                .text_center()
-        )
+    let severity_color = node.severity.color_hex();
+
+    div().absolute().top(px(pos.y)).left(px(pos.x)).child(
+        v_flex()
+            .items_center()
+            .gap_2()
+            .child(
+                div()
+                    .relative()
+                    .size(px(48.0))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    // 外圈: 严重程度环
+                    .child(
+                        div()
+                            .absolute()
+                            .size(px(48.0))
+                            .rounded_full()
+                            .border_2()
+                            .border_color(rgb(severity_color)),
+                    )
+                    // 内圈: 资产节点
+                    .child(
+                        div()
+                            .size(px(36.0))
+                            .rounded_full()
+                            .bg(rgb(node_color))
+                            .border_2()
+                            .border_color(rgb(0xffffff))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(
+                                // 节点中心点
+                                div().size(px(6.0)).rounded_full().bg(rgb(0xffffff)),
+                            ),
+                    )
+                    // 风险状态指示点
+                    .child(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .right_0()
+                            .size(px(14.0))
+                            .rounded_full()
+                            .bg(rgb(severity_color))
+                            .border_2()
+                            .border_color(rgb(0xffffff)),
+                    ),
+            )
+            .child(
+                v_flex().items_center().child(
+                    Label::new(node.name.clone())
+                        .text_xs()
+                        .text_center()
+                        .font_weight(FontWeight::MEDIUM),
+                ),
+            )
+            .on_mouse_down(MouseButton::Left, move |_, _, _| {
+                // Selection logic handled by TopologyCanvas
+            }),
+    )
+}
+
+fn get_zone_base_color(zone_type: &ZoneType) -> u32 {
+    match zone_type {
+        ZoneType::Z1 => 0x2563eb, // 蓝色
+        ZoneType::Z2 => 0x10b981, // 绿色
+        ZoneType::Z3 => 0x7c3aed, // 紫色
+        ZoneType::Z4 => 0xf97316, // 橙色
+        ZoneType::Z5 => 0xef4444, // 红色
+    }
 }
 
 fn get_asset_color(asset_type: &str) -> u32 {
     match asset_type {
-        "UAV" => 0x2563eb,           // 蓝色
-        "GCS" => 0x7c3aed,           // 紫色
-        "Router" => 0x10b981,        // 绿色
-        "Server" => 0xf97316,        // 橙色
-        _ => 0x6b7280,               // 灰色
-    }
-}
-
-fn get_severity_color(severity: &data::models::Severity) -> u32 {
-    match severity {
-        data::models::Severity::Critical => 0xef4444,  // 红色
-        data::models::Severity::High => 0xf97316,      // 橙色
-        data::models::Severity::Medium => 0xfbbf24,    // 黄色
-        data::models::Severity::Low => 0x10b981,       // 绿色
-        data::models::Severity::Info => 0x3b82f6,      // 蓝色
+        "UAV" => 0x10b981,    // 绿色
+        "GCS" => 0x2563eb,    // 蓝色
+        "Router" => 0x10b981, // 绿色
+        "Server" => 0x7c3aed, // 紫色
+        _ => 0x6b7280,        // 灰色
     }
 }

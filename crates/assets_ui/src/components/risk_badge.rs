@@ -1,7 +1,7 @@
+use data::models::Severity;
 use gpui::*;
 use gpui_component::{h_flex, label::Label};
 use ui::theme::*;
-use data::models::Severity;
 
 pub fn render_risk_badge(severity: &Severity, risk_score: u8) -> impl IntoElement {
     let color = match severity {

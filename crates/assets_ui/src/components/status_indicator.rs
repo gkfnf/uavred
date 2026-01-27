@@ -1,7 +1,7 @@
+use data::models::AssetStatus;
 use gpui::*;
 use gpui_component::{h_flex, label::Label};
 use ui::theme::*;
-use data::models::AssetStatus;
 
 pub fn render_status_indicator(status: &AssetStatus) -> impl IntoElement {
     let color = match status {
@@ -24,13 +24,7 @@ pub fn render_status_indicator(status: &AssetStatus) -> impl IntoElement {
         .px_2()
         .py_1()
         .rounded_md()
-        .child(
-            div()
-                .w_2()
-                .h_2()
-                .rounded_full()
-                .bg(rgb(color)),
-        )
+        .child(div().w_2().h_2().rounded_full().bg(rgb(color)))
         .child(
             Label::new(text)
                 .text_xs()

@@ -9,3 +9,5 @@ gpui-component = { workspace = true }
 workspace = { path = "../workspace" }
 ui = { path = "../ui" }
 data = { path = "../data" }
+anyhow = { workspace = true }
+serde_json = { workspace = true }

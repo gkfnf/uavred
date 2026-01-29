@@ -1,95 +1,135 @@
-//! Vulns UI - 漏洞管理面板
+//! Vulns UI - Vulnerability findings management panel with 3-column layout
 //!
-//! 三栏式布局：
-//! - 左侧：漏洞列表（按资产/严重程度/MITRE 分组，支持筛选）
-//! - 中间：漏洞详情和 PoC（AI 分析、代码块、MITRE 技术等）
-//! - 右侧：CVE 数据库（CVSS 评分、检测时间等）
-//!
-//! # 架构设计
-//!
-//! ## 分层结构
-//! - `components/`: 可复用的 UI 组件（无状态/纯展示）
-//! - `panels/`: 三个主面板（有状态/业务逻辑）
-//! - `state.rs`: UI 状态管理（视图类型、选中状态、分组状态）
-//!
-//! ## 数据流
-//! - 数据模型来自外部 `data` crate（VulnData 等）
-//! - UI 状态由 `VulnState` 管理
-//! - 通过 GPUI 的 Entity 和事件进行通信
-
-mod components;
-mod panels;
-mod state;
-
-pub use components::*;
-pub use panels::*;
-pub use state::*;
+//! Layout:
+//! - Left: Finding list grouped by severity
+//! - Middle: Finding detail with AI analysis and PoC
+//! - Right: CVE reference info and quick actions
 
 use gpui::*;
 use gpui_component::h_flex;
+use data::{VulnStore, VulnStoreEvent, init_and_load_vuln_store};
+use ui::theme::*;
 
-/// Vulns 面板 - 顶层容器
-///
-/// 组装三个子面板，形成完整的三栏布局
+mod finding_list;
+mod finding_detail;
+mod cve_info;
+
+pub use finding_list::*;
+pub use finding_detail::*;
+pub use cve_info::*;
+
+/// Main VulnsPanel with 3-column layout
 pub struct VulnsPanel {
-    /// 状态（保留引用以便扩展）
-    _state: Entity<VulnState>,
-    /// 子面板
-    vuln_list: Entity<VulnListPanel>,
-    vuln_detail: Entity<VulnDetailPanel>,
-    cve_info: Entity<CveInfoPanel>,
-    /// 订阅
-    _subscriptions: Vec<Subscription>,
+    vuln_store: Entity<VulnStore>,
+    _subscription: Subscription,
 }
 
 impl VulnsPanel {
     pub fn new(cx: &mut Context<Self>) -> Self {
-        // 创建状态并加载初始数据
-        let state = cx.new(|_| {
-            VulnState::new().with_vulns(state::mock::sample_vulns())
-        });
+        init_and_load_vuln_store(cx);
+        let vuln_store = VulnStore::global(cx);
 
-        // 创建子面板
-        let vuln_list = cx.new(|cx| VulnListPanel::new(state.clone(), cx));
-        let vuln_detail = cx.new(|_| VulnDetailPanel::new(state.clone()));
-        let cve_info = cx.new(|_| CveInfoPanel::new(state.clone()));
-
-        // 订阅状态变化
-        let subscription = cx.subscribe(&state, |_this, _state, _event: &VulnSelectedEvent, cx| {
-            cx.notify();
+        // Subscribe to VulnStore events
+        let _subscription = cx.subscribe(&vuln_store, |_this, _store, event: &VulnStoreEvent, cx| {
+            match event {
+                VulnStoreEvent::FindingsUpdated => {
+                    cx.notify();
+                }
+                VulnStoreEvent::FindingSelected(_) => {
+                    cx.notify();
+                }
+                VulnStoreEvent::VulnReferenceLoaded(_) => {
+                    cx.notify();
+                }
+            }
         });
 
         Self {
-            _state: state,
-            vuln_list,
-            vuln_detail,
-            cve_info,
-            _subscriptions: vec![subscription],
+            vuln_store,
+            _subscription,
         }
     }
 }
 
 impl Render for VulnsPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let findings = self.vuln_store.read(cx).findings().to_vec();
+        let selected_finding = self.vuln_store.read(cx).selected_finding().cloned();
+        let vuln_reference = self.vuln_store.read(cx).selected_vuln_reference().cloned();
+        let _is_loading = self.vuln_store.read(cx).is_loading();
+
         h_flex()
             .size_full()
-            .bg(rgb(ui::theme::BG_PRIMARY))
-            // 左侧：漏洞列表
-            .child(self.vuln_list.clone())
-            // 中间：详情和 PoC
-            .child(
-                div()
-                    .flex_1()
-                    .h_full()
-                    .overflow_hidden()
-                    .child(self.vuln_detail.clone()),
-            )
-            // 右侧：CVE 数据库
-            .child(self.cve_info.clone())
+            .gap(SPACING_MD)
+            .p(SPACING_MD)
+            .bg(rgb(BG_PRIMARY))
+            // Left column: Finding list
+            .child(finding_list::render_finding_list(&findings,
+                &self.vuln_store,
+            ))
+            // Middle column: Finding detail (if selected)
+            .child(finding_detail::render_finding_detail(
+                selected_finding.clone(),
+            ))
+            // Right column: CVE info and actions
+            .child(cve_info::render_cve_info(
+                selected_finding,
+                vuln_reference,
+                &self.vuln_store,
+            ))
     }
 }
 
-/// 创建漏洞面板
+/// Helper function to get severity color
+pub fn severity_color(severity: &data::models::Severity) -> u32 {
+    use data::models::Severity::*;
+    match severity {
+        Critical => SEVERITY_CRITICAL,
+        High => SEVERITY_HIGH,
+        Medium => SEVERITY_MEDIUM,
+        Low => SEVERITY_LOW,
+        _ => TEXT_MUTED,
+    }
+}
+
+/// Helper function to format severity as string
+pub fn severity_label(severity: &data::models::Severity) -> &'static str {
+    use data::models::Severity::*;
+    match severity {
+        Critical => "Critical",
+        High => "High",
+        Medium => "Medium",
+        Low => "Low",
+        _ => "Info",
+    }
+}
+
+/// Helper function to get status color
+pub fn status_color(status: &data::models::FindingStatus) -> u32 {
+    use data::models::FindingStatus::*;
+    match status {
+        New => STATUS_AI,
+        Validating => STATUS_WARNING,
+        Confirmed => STATUS_ERROR,
+        FalsePositive => TEXT_MUTED,
+        Remediated => STATUS_SUCCESS,
+        Accepted => ACCENT_BLUE,
+    }
+}
+
+/// Helper function to format status as string
+pub fn status_label(status: &data::models::FindingStatus) -> &'static str {
+    use data::models::FindingStatus::*;
+    match status {
+        New => "New",
+        Validating => "Validating",
+        Confirmed => "Confirmed",
+        FalsePositive => "False Positive",
+        Remediated => "Remediated",
+        Accepted => "Accepted",
+    }
+}
+
 pub fn vulns_panel(cx: &mut App) -> Entity<VulnsPanel> {
     cx.new(|cx| VulnsPanel::new(cx))
 }

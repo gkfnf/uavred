@@ -1,0 +1,23 @@
+[package]
+name = "db"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/db.rs"
+doctest = false
+
+[features]
+test-support = []
+
+[dependencies]
+anyhow.workspace = true
+dirs.workspace = true
+indoc.workspace = true
+log.workspace = true
+smol.workspace = true
+sqlez = { path = "../sqlez" }
+sqlez_macros = { path = "../sqlez_macros" }
+
+[dev-dependencies]
+tempfile = "3"

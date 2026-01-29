@@ -55,9 +55,10 @@ impl KanbanBoard {
     }
 
     fn tasks_by_status(&self, status: TaskStatus) -> Vec<TaskData> {
+        let status_str = status.as_str();
         self.tasks
             .iter()
-            .filter(|t| t.status == status)
+            .filter(|t| t.status == status_str)
             .cloned()
             .collect()
     }

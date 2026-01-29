@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 workspace = { path = "../workspace" }
 serde = { workspace = true }
+serde_json = { workspace = true }
 gpui = { workspace = true }
 sqlez = { workspace = true }
 sqlez_macros = { workspace = true }

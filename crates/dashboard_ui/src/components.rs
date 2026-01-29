@@ -9,7 +9,7 @@ use gpui_component::{
     v_flex, IconName, Sizable,
 };
 
-use data::{TaskData, TaskStatus};
+use data::TaskData;
 
 /// Kanban 列标题
 pub fn render_kanban_column_header<T: 'static>(
@@ -88,7 +88,7 @@ pub fn render_task_card<T: 'static>(
     on_start: Option<impl Fn(&mut T, &mut Context<T>, usize) + 'static>,
 ) -> impl IntoElement {
     let task_id = task.id;
-    let task_status = task.status;
+    let task_status = task.status.clone();
 
     let mut card = div()
         .bg(rgb(0xffffff))
@@ -144,7 +144,7 @@ pub fn render_task_card<T: 'static>(
     }
 
     // 如果是 Todo 状态且有启动回调，添加启动按钮
-    if task_status == TaskStatus::Todo && on_start.is_some() {
+    if task_status == "todo" && on_start.is_some() {
         card = card.child(
             Button::new(format!("task-start-{}", task_id))
                 .label("启动")

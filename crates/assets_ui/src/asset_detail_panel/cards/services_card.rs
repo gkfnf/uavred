@@ -50,7 +50,7 @@ impl ServicesCard {
                         .rounded_md()
                         .border_1()
                         .border_color(rgb(0xe5e7eb))
-                        .child(Label::new(s.service_name.clone()).text_xs())
+                        .child(Label::new(s.clone()).text_xs())
                         .into_any_element()
                 })
                 .collect()

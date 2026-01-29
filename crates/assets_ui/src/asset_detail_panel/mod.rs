@@ -58,7 +58,7 @@ impl AssetDetailPanel {
 
     /// Render the panel header with asset name and actions
     fn render_header(&self, node: &AssetNode, cx: &mut Context<Self>) -> impl IntoElement {
-        let risk_color = risk_color(node.risk_score);
+        let risk_color = risk_color(node.risk_score as u8);
         let node_id = node.id.clone();
 
         h_flex()

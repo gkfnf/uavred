@@ -1,0 +1,19 @@
+[package]
+name = "sqlez"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+rust = { unsafe_code = "allow" }
+
+[dependencies]
+anyhow.workspace = true
+futures.workspace = true
+indoc.workspace = true
+libsqlite3-sys = "0.30"
+log.workspace = true
+parking_lot.workspace = true
+smol.workspace = true
+sqlformat = "0.2"
+thread_local = "1.1.4"
+uuid.workspace = true

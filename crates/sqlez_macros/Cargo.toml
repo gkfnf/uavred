@@ -1,0 +1,17 @@
+[package]
+name = "sqlez_macros"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/sqlez_macros.rs"
+proc-macro = true
+doctest = false
+
+[dependencies]
+sqlez = { path = "../sqlez" }
+sqlformat = "0.2"
+syn = "2.0"

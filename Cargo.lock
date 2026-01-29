@@ -1423,6 +1423,7 @@ dependencies = [
  "gpui",
  "indoc",
  "serde",
+ "serde_json",
  "sqlez",
  "sqlez_macros",
  "tracing",
@@ -1435,6 +1436,20 @@ name = "data-url"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
+
+[[package]]
+name = "db"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs 5.0.1",
+ "indoc",
+ "log",
+ "smol",
+ "sqlez",
+ "sqlez_macros",
+ "tempfile",
+]
 
 [[package]]
 name = "deflate64"
@@ -3201,7 +3216,6 @@ version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e99fb7a497b1e3339bc746195567ed8d3e24945ecd636e3619d20b9de9e9149"
 dependencies = [
- "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -5374,10 +5388,8 @@ dependencies = [
 [[package]]
 name = "sqlez"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#5505e63a0df191aeed2988e5cd8073f2761f4303"
 dependencies = [
  "anyhow",
- "collections",
  "futures",
  "indoc",
  "libsqlite3-sys",
@@ -5386,14 +5398,12 @@ dependencies = [
  "smol",
  "sqlformat",
  "thread_local",
- "util",
  "uuid",
 ]
 
 [[package]]
 name = "sqlez_macros"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#5505e63a0df191aeed2988e5cd8073f2761f4303"
 dependencies = [
  "sqlez",
  "sqlformat",
@@ -6800,6 +6810,7 @@ dependencies = [
 name = "vulns_ui"
 version = "0.1.0"
 dependencies = [
+ "data",
  "gpui",
  "gpui-component",
  "ui",

@@ -16,6 +16,9 @@ members = [
     "crates/scan_ui",
     "crates/traffic_ui",
     "crates/flows_ui",
+    "crates/sqlez",
+    "crates/sqlez_macros",
+    "crates/db",
 ]
 
 [workspace.package]
@@ -48,8 +51,11 @@ tokio = { version = "1.35", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
 tracing-subscriber = "0.3"
 chrono = "0.4"
+futures = "0.3"
+log = "0.4"
+parking_lot = "0.12"
 uuid = { version = "1.6", features = ["v4", "serde"] }
-sqlez = { git = "https://github.com/zed-industries/zed", package = "sqlez" }
-sqlez_macros = { git = "https://github.com/zed-industries/zed", package = "sqlez_macros" }
+sqlez = { path = "crates/sqlez" }
+sqlez_macros = { path = "crates/sqlez_macros" }
 dirs = "5.0"
 indoc = "2.0"

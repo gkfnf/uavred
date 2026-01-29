@@ -100,7 +100,7 @@ impl DashboardPanel {
             store.add_task(task_clone.clone(), cx);
         });
 
-        cx.emit(DashboardEvent::TaskAdded(task.to_workspace()));
+        cx.emit(DashboardEvent::TaskAdded(task));
     }
 
     pub fn delete_task(&mut self, task_id: usize, cx: &mut Context<Self>) {
@@ -138,9 +138,9 @@ impl DashboardPanel {
             .find(|t| t.id == task_id)
         {
             eprintln!("DEBUG: Found task in todo_tasks, changing status to InProgress");
-            task.status = TaskStatus::InProgress;
+            task.status = "in_progress".to_string();
             
-            let mut updated_task = task.clone();
+            let updated_task = task.clone();
             let task_store = self.task_store.clone();
             
             // 更新数据库中的任务状态
@@ -182,10 +182,10 @@ impl DashboardPanel {
                             let is_auto_start = modal.read(cx).is_auto_start();
                             eprintln!("DEBUG: Description={}, auto_start={}", description, is_auto_start);
                             
-                            let task_status = if is_auto_start {
-                                TaskStatus::InProgress
+                            let task_status_str = if is_auto_start {
+                                "in_progress"
                             } else {
-                                TaskStatus::Todo
+                                "todo"
                             };
                             
                             if let Some(handle) = this_handle.upgrade() {
@@ -197,10 +197,9 @@ impl DashboardPanel {
                                     let task = TaskData {
                                         id: task_id,
                                         title,
-                                        description,
                                         task_type: String::from("task"),
                                         priority: String::from("Medium"),
-                                        status: task_status,
+                                        status: task_status_str.to_string(),
                                     };
                                     eprintln!("DEBUG: calling add_task");
                                     this.add_task(task, cx);

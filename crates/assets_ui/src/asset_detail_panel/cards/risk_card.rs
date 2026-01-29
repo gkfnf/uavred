@@ -10,7 +10,7 @@ pub struct RiskCard;
 
 impl RiskCard {
     pub fn render(node: &AssetNode) -> impl IntoElement {
-        let risk_color = risk_color(node.risk_score);
+        let risk_color = risk_color(node.risk_score as u8);
 
         v_flex()
             .p_3()

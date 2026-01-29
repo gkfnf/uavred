@@ -49,8 +49,8 @@ impl PortsCard {
                             node.scan_progress
                                 .last_scan
                                 .as_ref()
-                                .map(|s| s.split('T').next().unwrap_or(s))
-                                .unwrap_or(asset_detail::NEVER_SCANNED)
+                                .map(|s| s.format("%Y-%m-%d").to_string())
+                                .unwrap_or_else(|| asset_detail::NEVER_SCANNED.to_string())
                         ))
                         .text_xs()
                         .text_color(rgb(TEXT_MUTED)),

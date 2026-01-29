@@ -1,4 +1,4 @@
-use data::init_task_store;
+use data::init_and_load_task_store;
 use gpui::*;
 use gpui_component::Root;
 use gpui_component_assets::Assets;
@@ -15,8 +15,8 @@ fn main() {
         // Initialize GPUI Component
         gpui_component::init(cx);
 
-        // Initialize TaskStore
-        init_task_store(cx);
+        // Initialize TaskStore and load data from database
+        init_and_load_task_store(cx);
 
         // Set light theme as default (matching Figma design)
         gpui_component::Theme::change(gpui_component::ThemeMode::Light, None, cx);

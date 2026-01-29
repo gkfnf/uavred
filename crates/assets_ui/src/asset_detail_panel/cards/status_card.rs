@@ -17,6 +17,8 @@ impl StatusCard {
             AssetStatus::Offline => (asset_detail::STATUS_OFFLINE, TEXT_MUTED),
             AssetStatus::Unknown => (asset_detail::STATUS_UNKNOWN, TEXT_MUTED),
             AssetStatus::Maintenance => (asset_detail::STATUS_MAINTENANCE, TEXT_MUTED),
+            AssetStatus::Busy => ("BUSY", 0xf59e0b),
+            AssetStatus::Error => ("ERROR", 0xef4444),
         };
 
         v_flex()

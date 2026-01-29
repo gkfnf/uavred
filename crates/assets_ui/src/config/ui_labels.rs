@@ -101,6 +101,8 @@ pub fn status_label(status: &data::models::AssetStatus) -> &'static str {
         AssetStatus::Offline => asset_detail::STATUS_OFFLINE,
         AssetStatus::Unknown => asset_detail::STATUS_UNKNOWN,
         AssetStatus::Maintenance => asset_detail::STATUS_MAINTENANCE,
+        AssetStatus::Busy => "BUSY",
+        AssetStatus::Error => "ERROR",
     }
 }
 

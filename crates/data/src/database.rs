@@ -5,7 +5,8 @@ use chrono::Utc;
 use sqlez::connection::Connection;
 use std::sync::{Arc, Mutex};
 
-use crate::models::{TaskData, TaskStatus};
+use crate::models::TaskStatus;
+use workspace::TaskData;
 
 /// 任务数据库连接
 pub struct TasksDatabase {

@@ -2,7 +2,7 @@
 //!
 //! 显示任务摘要信息，包括标题、优先级、类型标签
 
-use data::{TaskData, TaskStatus};
+use data::TaskData;
 use gpui::prelude::FluentBuilder as _;
 use gpui::*;
 use gpui_component::{
@@ -23,7 +23,7 @@ type TaskEditHandler = Rc<dyn Fn(usize, &mut Window, &mut App) + 'static>;
 type TaskDeleteHandler = Rc<dyn Fn(usize, &mut Window, &mut App) + 'static>;
 
 /// 任务移动状态回调类型
-type TaskMoveStatusHandler = Rc<dyn Fn(usize, TaskStatus, &mut Window, &mut App) + 'static>;
+type TaskMoveStatusHandler = Rc<dyn Fn(usize, String, &mut Window, &mut App) + 'static>;
 
 /// 拖拽任务数据结构
 #[derive(Clone)]
@@ -32,8 +32,8 @@ pub struct DragTask {
     pub task_id: usize,
     /// 任务标题 (用于显示拖拽预览)
     pub title: String,
-    /// 原始状态
-    pub from_status: TaskStatus,
+    /// 原始状态 (String for compatibility)
+    pub from_status: String,
 }
 
 impl DragTask {
@@ -42,7 +42,7 @@ impl DragTask {
         Self {
             task_id: task.id,
             title: task.title.clone(),
-            from_status: task.status,
+            from_status: task.status.clone(),
         }
     }
 }
@@ -123,7 +123,7 @@ impl TaskCard {
     /// 设置移动状态回调
     pub fn on_move_status(
         mut self,
-        handler: impl Fn(usize, TaskStatus, &mut Window, &mut App) + 'static,
+        handler: impl Fn(usize, String, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_move_status = Some(Rc::new(handler));
         self
@@ -202,31 +202,31 @@ impl RenderOnce for TaskCard {
                                 .item(PopupMenuItem::new("Todo").on_click({
                                     let handler = handler.clone();
                                     move |_event, window, cx| {
-                                        handler(task_id, TaskStatus::Todo, window, cx);
+                                        handler(task_id, "todo".to_string(), window, cx);
                                     }
                                 }))
                                 .item(PopupMenuItem::new("In Progress").on_click({
                                     let handler = handler.clone();
                                     move |_event, window, cx| {
-                                        handler(task_id, TaskStatus::InProgress, window, cx);
+                                        handler(task_id, "in_progress".to_string(), window, cx);
                                     }
                                 }))
                                 .item(PopupMenuItem::new("In Review").on_click({
                                     let handler = handler.clone();
                                     move |_event, window, cx| {
-                                        handler(task_id, TaskStatus::InReview, window, cx);
+                                        handler(task_id, "in_review".to_string(), window, cx);
                                     }
                                 }))
                                 .item(PopupMenuItem::new("Done").on_click({
                                     let handler = handler.clone();
                                     move |_event, window, cx| {
-                                        handler(task_id, TaskStatus::Done, window, cx);
+                                        handler(task_id, "done".to_string(), window, cx);
                                     }
                                 }))
                                 .item(PopupMenuItem::new("Canceled").on_click({
                                     let handler = handler.clone();
                                     move |_event, window, cx| {
-                                        handler(task_id, TaskStatus::Canceled, window, cx);
+                                        handler(task_id, "canceled".to_string(), window, cx);
                                     }
                                 }))
                         })

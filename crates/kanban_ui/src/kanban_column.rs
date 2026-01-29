@@ -18,7 +18,7 @@ use ui::theme::*;
 
 type TaskClickHandler = Rc<dyn Fn(usize, &mut Window, &mut App) + 'static>;
 
-type TaskDropHandler = Box<dyn Fn(usize, TaskStatus, TaskStatus, &mut Window, &mut App) + 'static>;
+type TaskDropHandler = Box<dyn Fn(usize, String, String, &mut Window, &mut App) + 'static>;
 
 /// 看板列组件
 #[derive(IntoElement)]
@@ -84,7 +84,7 @@ impl KanbanColumn {
 
     pub fn on_task_drop(
         mut self,
-        handler: impl Fn(usize, TaskStatus, TaskStatus, &mut Window, &mut App) + 'static,
+        handler: impl Fn(usize, String, String, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_task_drop = Some(Box::new(handler));
         self
@@ -117,10 +117,10 @@ impl RenderOnce for KanbanColumn {
         let drag_over_bg = self.drag_over_color();
         let task_count = self.tasks.len();
         let selected_id = self.selected_task_id;
-        let target_status = self.status;
+        let target_status = self.status.as_str().to_string();
 
         v_flex()
-            .id(format!("kanban-column-{:?}", self.status))
+            .id(format!("kanban-column-{}", target_status))
             .w(KANBAN_COLUMN_WIDTH)
             .h_full()
             .flex_shrink_0()
@@ -136,7 +136,7 @@ impl RenderOnce for KanbanColumn {
             .when_some(self.on_task_drop, |this, handler| {
                 this.on_drop(move |drag: &DragTask, window, cx| {
                     if drag.from_status != target_status {
-                        handler(drag.task_id, drag.from_status, target_status, window, cx);
+                        handler(drag.task_id, drag.from_status.clone(), target_status.clone(), window, cx);
                     }
                 })
             })

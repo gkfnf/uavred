@@ -9,6 +9,8 @@ pub fn render_status_indicator(status: &AssetStatus) -> impl IntoElement {
         AssetStatus::Offline => TEXT_MUTED,
         AssetStatus::Unknown => STATUS_WARNING,
         AssetStatus::Maintenance => ACCENT_BLUE,
+        AssetStatus::Busy => STATUS_WARNING,
+        AssetStatus::Error => 0xef4444,
     };
 
     let text = match status {
@@ -16,6 +18,8 @@ pub fn render_status_indicator(status: &AssetStatus) -> impl IntoElement {
         AssetStatus::Offline => "Offline",
         AssetStatus::Unknown => "Unknown",
         AssetStatus::Maintenance => "Maintenance",
+        AssetStatus::Busy => "Busy",
+        AssetStatus::Error => "Error",
     };
 
     h_flex()

@@ -2,160 +2,235 @@
 
 **Purpose**: Network asset topology visualization with interactive canvas.
 
-## OVERVIEW
-
-Visualizes network assets (drones, controllers, ground stations) as nodes with connections, supporting zoom/pan and drag-drop node positioning.
-
-## STRUCTURE
+## Architecture Overview
 
 ```
 assets_ui/
 ├── src/
-│   ├── topology_canvas.rs   # Interactive canvas (~492 lines)
-│   ├── assets_panel.rs     # Asset list view
-│   └── lib.rs            # Module exports
+│   ├── lib.rs                    # Top-level container (AssetsPanel)
+│   ├── config/                   # Configuration layer
+│   │   ├── zone_config.rs        # Zone metadata (Z1-Z5 names, colors)
+│   │   ├── ui_labels.rs          # UI text constants (i18n ready)
+│   │   └── theme_ext.rs          # Theme color constants
+│   ├── repository/               # Data access layer
+│   │   ├── repository.rs         # AssetRepository trait
+│   │   └── mock_repository.rs    # Sample data for development
+│   ├── asset_detail_panel/       # Asset detail view
+│   │   ├── mod.rs                # Main panel component
+│   │   └── cards/                # Individual info cards
+│   │       ├── zone_card.rs      # Zone info
+│   │       ├── risk_card.rs      # Risk score
+│   │       ├── status_card.rs    # Online/offline status
+│   │       ├── ports_card.rs     # Open ports
+│   │       ├── services_card.rs  # Detected services
+│   │       ├── credentials_card.rs
+│   │       ├── business_card.rs
+│   │       ├── owner_card.rs
+│   │       ├── compliance_card.rs
+│   │       ├── actions_card.rs   # AI/Scan/Config buttons
+│   │       └── vuln_stats_card.rs
+│   ├── topology_canvas/          # Network topology visualization
+│   │   ├── mod.rs                # Main canvas component
+│   │   ├── camera.rs             # Camera/viewport management
+│   │   └── zone_canvas.rs        # Per-zone viewport with auto-centering
+│   ├── components/               # Shared UI components
+│   │   ├── asset_header.rs
+│   │   ├── port_list.rs
+│   │   ├── risk_badge.rs
+│   │   ├── status_indicator.rs
+│   │   └── topology_zone.rs
+│   └── events.rs                 # Event definitions
 ```
 
-## WHERE TO LOOK
+## Data Flow
 
-| Task | Location |
-|------|----------|
-| Canvas rendering | `topology_canvas.rs` |
-| Node positioning | `topology_canvas.rs::NodePosition` |
-| Drag-drop logic | `topology_canvas.rs` drag_state |
-| Zoom/pan | `topology_canvas.rs` scale/offset |
+```
+Database (future)
+    │
+    ▼
+Repository (MockAssetRepository now)
+    │
+    ▼
+TopologyCanvas / AssetDetailPanel
+    │
+    ▼
+Card Components / ZoneCanvas
+```
 
-## CONVENTIONS
+## Key Design Decisions
 
-### Canvas State
+### 1. Configuration Layer (`config/`)
 
-Maintain transform state (scale, offset) and node positions:
+All static configuration centralized:
+
 ```rust
-pub struct TopologyCanvas {
-    nodes: Vec<AssetNode>,
-    connections: Vec<ConnectionInfo>,
-    node_positions: HashMap<String, NodePosition>,
-    selected_node_id: Option<String>,
-    scale: f32,
-    offset_x: f32,
-    offset_y: f32,
-    drag_state: Option<(String, Point<Pixels>)>,
-    canvas_bounds: Option<Bounds<Pixels>>,
+// Zone metadata
+let config = zone.config();  // ZoneConfig { short_name, layer_name, primary_color, ... }
+
+// UI labels
+ui_labels::panel::TOPOLOGY_TITLE  // "网络拓扑 - 业务层级视图"
+ui_labels::severity::HIGH          // "高危"
+
+// Theme colors
+theme_ext::CARD_RISK_BG  // 0xfdf4ff
+```
+
+### 2. Repository Pattern (`repository/`)
+
+```rust
+pub trait AssetRepository {
+    fn get_all_assets(&self) -> Vec<AssetNode>;
+    fn get_assets_by_zone(&self, zone: ZoneType) -> Vec<AssetNode>;
+    fn get_asset_by_id(&self, id: &str) -> Option<AssetNode>;
 }
 ```
 
-### Position Tracking
+- `MockAssetRepository` - Development/test data
+- Future: `DbAssetRepository` - Real database connection
 
-Use HashMap for O(1) position lookup:
+### 3. Card-Based Architecture
+
+AssetDetailPanel uses 11 focused card components instead of one 590-line render function:
+
+| Card | Responsibility |
+|------|---------------|
+| ZoneCard | Security zone info |
+| RiskCard | Risk score + progress bar |
+| StatusCard | Online/offline status |
+| PortsCard | Open ports list |
+| ServicesCard | Detected services |
+| CredentialsCard | Auth info |
+| BusinessCard | Business purpose |
+| OwnerCard | Owner/team |
+| ComplianceCard | Compliance badges |
+| ActionsCard | AI/Scan/Config buttons |
+| VulnStatsCard | Vulnerability count |
+
+### 4. Camera System (`camera.rs`)
+
+Centralized viewport management with smooth interactions:
+
 ```rust
-struct NodePosition {
-    pub x: f32,
-    pub y: f32,
+pub struct Camera {
+    pub scale: f32,           // Zoom level (0.1 - 5.0)
+    pub offset_x: f32,        // Pan offset X
+    pub offset_y: f32,        // Pan offset Y
+    pub viewport_width: f32,  // Screen width
+    pub viewport_height: f32, // Screen height
 }
 ```
 
-### Event Emission
+**Features:**
+- **Auto-centering on init**: Each zone automatically fits all its nodes on creation
+- **Mouse-wheel zoom**: 15% step factor, min 10%, max 500%
+- **Pan by dragging**: Click and drag to pan the viewport
+- **Zoom-to-point**: Zoom keeps the point under cursor stable
+- **Fit-to-view**: `fit_to_view()` adjusts scale and offset to show all nodes
 
-Emit selection events:
+**Usage:**
 ```rust
-pub enum AssetSelectedEvent {
-    NodeSelected(String),
-}
+// Auto-center on initialization (happens automatically)
+let mut canvas = ZoneCanvas::new(...);
+// canvas.fit_to_view(); // Already called in new()
 
-impl EventEmitter<AssetSelectedEvent> for TopologyCanvas {}
+// Manual reset
+canvas.reset_view();
 
-// Emit:
-cx.emit(AssetSelectedEvent::NodeSelected(node_id.clone()));
+// Zoom at specific point
+canvas.zoom(delta_y, mouse_x, mouse_y);
+
+// Center on specific node
+canvas.center_on_node("node-id");
 ```
 
-## ANTI-PATTERNS
+### 5. Zone Canvas
 
-- **Never use absolute pixel values for positioning** - use relative coordinates with transform
-- **Don't recalculate positions on every render** - cache in HashMap
-- **Avoid nested HashMap lookups** - use `get()` once and store reference
-- **Never clear drag_state on mouse up without validation** - check bounds first
-- **Don't hardcode node sizes** - use constants for radius, spacing
+TopologyCanvas delegates to 5 ZoneCanvas instances:
+- Each zone has independent viewport (pan/zoom) via `Camera`
+- **Auto-centered on load**: All nodes visible in viewport
+- **Mouse wheel** = Zoom (centered on viewport center)
+- **Click + drag** = Pan
+- Rendering via GPUI canvas API with coordinate transformation
 
-## CANVAS PATTERNS
+**Interaction Summary:**
+- 🖱️ **Mouse wheel** = Zoom in/out (centered)
+- 🖱️ **Click + drag** = Pan canvas
+- 👆 **Click** = Select node
 
-### Pan/Zoom
+**Visual Design:**
+- Each zone's canvas fills its allocated area completely
+- Canvas content is **clipped by zone boundaries** (`overflow_hidden`)
+- Nodes can be panned/zoomed infinitely, but only visible portion is shown
+- Background color matches zone theme color
 
-Apply transform before rendering:
+## Database Integration (Future)
+
+To connect to real database:
+
+1. Implement `DbAssetRepository`:
 ```rust
-fn transform_point(&self, x: f32, y: f32) -> Point<Pixels> {
-    px(x * self.scale + self.offset_x, y * self.scale + self.offset_y)
+pub struct DbAssetRepository {
+    db: DatabaseConnection,
 }
-```
 
-### Hit Testing
-
-Check distance for node selection:
-```rust
-fn hit_test(&self, mouse_x: f32, mouse_y: f32) -> Option<&str> {
-    for (id, pos) in &self.node_positions {
-        let dx = pos.x - mouse_x;
-        let dy = pos.y - mouse_y;
-        if dx*dx + dy*dy < NODE_RADIUS*NODE_RADIUS {
-            return Some(id);
-        }
+impl AssetRepository for DbAssetRepository {
+    fn get_all_assets(&self) -> Vec<AssetNode> {
+        // Query database
     }
-    None
+    // ...
 }
 ```
 
-### Drag State
+2. Update `TopologyCanvas::new()` to use `DbAssetRepository` instead of `MockAssetRepository`
 
-Track drag with delta calculation:
+## Where Data Comes From
+
+| UI Element | Source |
+|-----------|--------|
+| Asset count | Repository (DB in future) |
+| Connection count | Repository (calculated from asset.connections) |
+| Zone names | `config::zone_config` (Z1-Z5 Chinese names) |
+| Severity labels | `config::ui_labels::severity` (低危/中危/高危/严重) |
+| Risk score | AssetNode.risk_score (from DB) |
+| Open ports | AssetNode.open_ports (from DB) |
+| Services | AssetNode.services (from DB, with defaults) |
+| Compliance | AssetNode.compliance_standards (with defaults) |
+| Status | AssetNode.status (from DB) |
+| Action buttons | Static UI (AI分析/扫描资产/配置) |
+
+## Coding Conventions
+
+### Import Order
 ```rust
-.on_mouse_move(|event, window, cx| {
-    if let Some((node_id, start_pos)) = &self.drag_state {
-        let delta = event.position - *start_pos;
-        // Update node position
-    }
-})
+// 1. Standard library
+use std::...;
+
+// 2. External crates
+use gpui::*;
+use gpui_component::*;
+
+// 3. Internal modules
+use crate::config::*;
+use crate::repository::*;
+use data::models::*;
 ```
 
-### Connection Rendering
-
-Draw lines between connected nodes:
+### Text Constants
+All user-facing text must use `ui_labels` constants:
 ```rust
-for conn in &self.connections {
-    let start = self.node_positions.get(&conn.from)?;
-    let end = self.node_positions.get(&conn.to)?;
-    // Draw line from start to end
-}
+// ✅ Good
+Label::new(ui_labels::panel::TOPOLOGY_TITLE)
+
+// ❌ Bad
+Label::new("网络拓扑 - 业务层级视图")
 ```
 
-## GPUI PATTERNS
-
-### Event Handlers
-
-Register handlers on element:
+### Colors
+Use theme constants, not magic numbers:
 ```rust
-.on_click(cx.listener(|this, event, window, cx| {
-    // Handle click
-}))
-.on_mouse_move(cx.listener(|this, event, window, cx| {
-    // Handle drag
-}))
+// ✅ Good
+.bg(rgb(theme_ext::CARD_RISK_BG))
+
+// ❌ Bad
+.bg(rgb(0xfdf4ff))
 ```
-
-### Render Loop
-
-Custom rendering in canvas:
-```rust
-fn render_nodes(&self, window: &mut Window, cx: &mut Context<Self>) {
-    for node in &self.nodes {
-        let pos = self.node_positions.get(&node.id)?;
-        // Draw node circle + label
-    }
-}
-```
-
-## NOTES
-
-- Canvas is still WIP - basic structure exists, rendering needs implementation
-- Node positions are auto-calculated in `create_sample_nodes()`
-- Zoom/pan uses transform matrix (scale, offset_x, offset_y)
-- Drag-drop updates node_positions HashMap, not AssetNode directly
-- Connections are directional (from -> to) with optional metadata

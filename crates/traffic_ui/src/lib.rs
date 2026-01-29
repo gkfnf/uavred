@@ -66,7 +66,9 @@ impl Render for TrafficPanel {
         let traffic = self.traffic_store.read(cx).traffic().to_vec();
         let selected_traffic = self.traffic_store.read(cx).selected_traffic().cloned();
         let is_capturing = self.traffic_store.read(cx).is_capturing();
+        let is_loading = self.traffic_store.read(cx).is_loading();
         let stats = self.traffic_store.read(cx).stats().cloned();
+        let error = self.traffic_store.read(cx).last_error().map(|e| e.to_string());
 
         v_flex()
             .size_full()
@@ -75,13 +77,35 @@ impl Render for TrafficPanel {
             .bg(rgb(BG_PRIMARY))
             // Top bar with search and capture toggle
             .child(self.render_top_bar(is_capturing, cx))
+            // Error banner (if any)
+            .children(error.map(|e| render_error_banner(&e, &self.traffic_store)))
             // Main content area
             .child(
                 h_flex()
                     .flex_1()
                     .gap(SPACING_MD)
                     // Left column: Traffic list
-                    .child(traffic_list::render_traffic_list(&traffic, &self.traffic_store))
+                    .child(
+                        v_flex()
+                            .w(px(400.0))
+                            .h_full()
+                            .child(traffic_list::render_traffic_list(&traffic, &self.traffic_store))
+                            .when(is_loading, |this| {
+                                this.child(render_loading_overlay("Loading traffic..."))
+                            })
+                            .when(!is_loading && !is_capturing && traffic.is_empty(), |this| {
+                                this.child(render_empty_state(
+                                    "No traffic captured",
+                                    "Start capture to begin recording network traffic",
+                                ))
+                            })
+                            .when(!is_loading && is_capturing && traffic.is_empty(), |this| {
+                                this.child(render_empty_state(
+                                    "Waiting for traffic...",
+                                    "Capture is active. Traffic will appear here when detected.",
+                                ))
+                            })
+                    )
                     // Middle column: Request/Response inspector
                     .child(request_response::render_request_response(selected_traffic.clone()))
                     // Right column: Packet info and actions
@@ -182,6 +206,72 @@ pub fn format_duration(ms: i32) -> String {
     } else {
         format!("{:.1} s", ms as f64 / 1000.0)
     }
+}
+
+/// Render error banner
+fn render_error_banner(error: &str, traffic_store: &Entity<TrafficStore>) -> impl IntoElement {
+    let traffic_store = traffic_store.clone();
+    let error_msg = error.to_string();
+    h_flex()
+        .px(SPACING_MD)
+        .py(SPACING_SM)
+        .gap(SPACING_MD)
+        .bg(rgb(STATUS_ERROR))
+        .rounded_md()
+        .child(Label::new(format!("Error: {}", error_msg)).text_color(gpui::white()))
+        .child(
+            Button::new("dismiss")
+                .label("Dismiss")
+                .on_click(move |_event, _window, cx| {
+                    traffic_store.update(cx, |store, cx| {
+                        store.clear_error(cx);
+                    });
+                }),
+        )
+}
+
+/// Render loading overlay
+fn render_loading_overlay(message: &str) -> impl IntoElement {
+    let msg = message.to_string();
+    v_flex()
+        .absolute()
+        .inset_0()
+        .items_center()
+        .justify_center()
+        .bg(rgb(BG_PRIMARY))
+        .child(
+            v_flex()
+                .gap(SPACING_MD)
+                .items_center()
+                .child(
+                    h_flex()
+                        .w(px(32.0))
+                        .h(px(32.0))
+                        .rounded_full()
+                        .border(px(3.0))
+                        .border_color(rgb(ACCENT_BLUE)),
+                )
+                .child(Label::new(msg).text_color(rgb(TEXT_MUTED)).text_size(TEXT_SIZE_SM)),
+        )
+}
+
+/// Render empty state
+fn render_empty_state(title: &str, description: &str) -> impl IntoElement {
+    let title_str = title.to_string();
+    let desc_str = description.to_string();
+    v_flex()
+        .flex_1()
+        .items_center()
+        .justify_center()
+        .gap(SPACING_MD)
+        .p(SPACING_XL)
+        .child(
+            Label::new(title_str)
+                .text_size(TEXT_SIZE_LG)
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(rgb(TEXT_SECONDARY)),
+        )
+        .child(Label::new(desc_str).text_size(TEXT_SIZE_BASE).text_color(rgb(TEXT_MUTED)))
 }
 
 pub fn traffic_panel(cx: &mut App) -> Entity<TrafficPanel> {

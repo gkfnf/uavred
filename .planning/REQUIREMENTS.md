@@ -89,50 +89,50 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VULN-01 | Phase 1 | Pending |
-| VULN-02 | Phase 1 | Pending |
-| VULN-03 | Phase 1 | Pending |
-| VULN-04 | Phase 1 | Pending |
-| VULN-05 | Phase 1 | Pending |
-| VULN-06 | Phase 1 | Pending |
-| VULN-07 | Phase 1 | Pending |
-| VULN-08 | Phase 1 | Pending |
-| VULN-09 | Phase 1 | Pending |
-| VULN-10 | Phase 1 | Pending |
-| VULN-11 | Phase 1 | Pending |
-| VULN-12 | Phase 1 | Pending |
-| TRAF-01 | Phase 2 | Pending |
-| TRAF-02 | Phase 2 | Pending |
-| TRAF-03 | Phase 2 | Pending |
-| TRAF-04 | Phase 2 | Pending |
-| TRAF-05 | Phase 2 | Pending |
-| TRAF-06 | Phase 2 | Pending |
-| TRAF-07 | Phase 2 | Pending |
-| TRAF-08 | Phase 2 | Pending |
-| TRAF-09 | Phase 2 | Pending |
-| TRAF-10 | Phase 2 | Pending |
-| TRAF-11 | Phase 2 | Pending |
-| TRAF-12 | Phase 2 | Pending |
-| TRAF-13 | Phase 2 | Pending |
-| TRAF-14 | Phase 2 | Pending |
-| TRAF-15 | Phase 2 | Pending |
 | DATA-01 | Phase 1 | Pending |
 | DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 2 | Pending |
-| DATA-04 | Phase 2 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| DATA-04 | Phase 3 | Pending |
 | DATA-05 | Phase 1 | Pending |
-| DATA-06 | Phase 1-2 | Pending |
+| DATA-06 | Phase 1 | Pending |
 | DATA-07 | Phase 1 | Pending |
-| UI-01 | Phase 1-2 | Pending |
-| UI-02 | Phase 1-2 | Pending |
-| UI-03 | Phase 1-2 | Pending |
-| UI-04 | Phase 1-2 | Pending |
+| VULN-01 | Phase 2 | Pending |
+| VULN-02 | Phase 2 | Pending |
+| VULN-03 | Phase 2 | Pending |
+| VULN-04 | Phase 2 | Pending |
+| VULN-05 | Phase 2 | Pending |
+| VULN-06 | Phase 2 | Pending |
+| VULN-07 | Phase 2 | Pending |
+| VULN-08 | Phase 2 | Pending |
+| VULN-09 | Phase 2 | Pending |
+| VULN-10 | Phase 2 | Pending |
+| VULN-11 | Phase 2 | Pending |
+| VULN-12 | Phase 2 | Pending |
+| TRAF-01 | Phase 3 | Pending |
+| TRAF-02 | Phase 3 | Pending |
+| TRAF-03 | Phase 3 | Pending |
+| TRAF-04 | Phase 3 | Pending |
+| TRAF-05 | Phase 3 | Pending |
+| TRAF-06 | Phase 3 | Pending |
+| TRAF-07 | Phase 3 | Pending |
+| TRAF-08 | Phase 3 | Pending |
+| TRAF-09 | Phase 3 | Pending |
+| TRAF-10 | Phase 3 | Pending |
+| TRAF-11 | Phase 3 | Pending |
+| TRAF-12 | Phase 3 | Pending |
+| TRAF-13 | Phase 3 | Pending |
+| TRAF-14 | Phase 3 | Pending |
+| TRAF-15 | Phase 3 | Pending |
+| UI-01 | Phase 4 | Pending |
+| UI-02 | Phase 4 | Pending |
+| UI-03 | Phase 4 | Pending |
+| UI-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 40
-- Unmapped: 0 ✓
+- v1 requirements: 37 total
+- Mapped to phases: 37
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Last updated: 2026-01-29 after roadmap creation*

@@ -3,6 +3,7 @@ use gpui::*;
 use gpui_component::Root;
 use gpui_component_assets::Assets;
 use uavred::Workspace;
+use workspace_ui::AppState;
 
 fn main() {
     tracing_subscriber::fmt()
@@ -14,6 +15,9 @@ fn main() {
     app.run(move |cx| {
         // Initialize GPUI Component
         gpui_component::init(cx);
+        
+        // Initialize global AppState
+        cx.set_global(AppState::new());
 
         // Initialize TaskStore and load data from database
         init_and_load_task_store(cx);

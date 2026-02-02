@@ -4,6 +4,7 @@ pub mod repository;
 pub mod task_store;
 pub mod vuln_store;
 pub mod traffic_store;
+pub mod asset_store;
 
 // New UAVRed database
 pub mod uavred_db;
@@ -28,6 +29,9 @@ pub use task_store::{
 pub use vuln_store::{
     VulnStore,
     VulnStoreEvent,
+    GroupBy,
+    VulnerabilityWithFindings,
+    VulnStats,
     init_vuln_store,
     init_and_load_vuln_store,
 };
@@ -39,6 +43,15 @@ pub use traffic_store::{
     TrafficStats,
     init_traffic_store,
     init_and_load_traffic_store,
+};
+
+// Re-export AssetStore (for assets_ui)
+pub use asset_store::{
+    AssetStore,
+    AssetStoreEvent,
+    AssetStats,
+    init_asset_store,
+    init_and_load_asset_store,
 };
 
 // Re-export workspace types for convenience

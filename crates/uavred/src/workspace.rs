@@ -13,10 +13,12 @@ use gpui_component::{
     tree::{TreeItem, TreeState},
     v_flex, Root, Selectable, Sizable, TitleBar,
 };
+use settings_ui::SettingsPanel;
 use traffic_ui::TrafficPanel;
 use ui::events::WorkspaceEvent;
 use vulns_ui::VulnsPanel;
 use workspace::{AppView, VulnFilter};
+use workspace_ui::AppState;
 
 /// Workspace - 顶层应用，协调所有面板
 pub struct Workspace {
@@ -28,6 +30,7 @@ pub struct Workspace {
     vulns_panel: Option<Entity<VulnsPanel>>,
     traffic_panel: Option<Entity<TrafficPanel>>,
     flows_panel: Option<Entity<FlowsPanel>>,
+    settings_panel: Option<Entity<SettingsPanel>>,
 
     // 全局状态
     scan_input: Option<Entity<InputState>>,
@@ -51,6 +54,7 @@ impl Workspace {
             vulns_panel: None,
             traffic_panel: None,
             flows_panel: None,
+            settings_panel: None,
             scan_input: None,
             assets_tree: None,
             selected_asset: None,
@@ -60,8 +64,34 @@ impl Workspace {
     }
 
     pub fn set_active_view(&mut self, view: AppView, cx: &mut Context<Self>) {
+        let is_assets_view = view == AppView::Assets;
+        
+        // Hide WebView when leaving Assets tab
+        if !is_assets_view {
+            if let Some(ref assets_panel) = self.assets_panel {
+                assets_panel.update(cx, |panel, cx| {
+                    panel.set_webview_visible(false, cx);
+                });
+            }
+        }
+        
         self.active_view = view;
+        
+        // Show WebView when entering Assets tab
+        if is_assets_view {
+            if let Some(ref assets_panel) = self.assets_panel {
+                assets_panel.update(cx, |panel, cx| {
+                    panel.set_webview_visible(true, cx);
+                });
+            }
+        }
+        
+        // Update global app state
+        if let Some(app_state) = cx.try_global::<AppState>() {
+            app_state.set_active_view(view);
+        }
         cx.emit(WorkspaceEvent::ViewChanged(view));
+        cx.notify();
     }
 
     pub fn set_vuln_filter(&mut self, filter: VulnFilter, _cx: &mut Context<Self>) {
@@ -114,6 +144,16 @@ impl Workspace {
         } else {
             let panel = cx.new(|cx| FlowsPanel::new(cx));
             self.flows_panel = Some(panel.clone());
+            panel
+        }
+    }
+
+    fn get_or_create_settings_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Entity<SettingsPanel> {
+        if let Some(ref panel) = self.settings_panel {
+            panel.clone()
+        } else {
+            let panel = cx.new(|cx| SettingsPanel::new(window, cx));
+            self.settings_panel = Some(panel.clone());
             panel
         }
     }
@@ -236,10 +276,8 @@ impl Workspace {
                     .into_any_element()
             }
             AppView::Settings => {
-                // TODO: 实现 Settings 面板
-                div()
-                    .child(Label::new("Settings - Coming Soon"))
-                    .into_any_element()
+                let panel = self.get_or_create_settings_panel(window, cx);
+                panel.clone().into_any_element()
             }
         })
     }

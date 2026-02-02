@@ -1,22 +1,25 @@
-//! Vulns UI - Vulnerability findings management panel with 3-column layout
+//! Vulns UI - Vulnerability Knowledge Base Management Panel
 //!
-//! Layout:
-//! - Left: Finding list grouped by severity
-//! - Middle: Finding detail with AI analysis and PoC
-//! - Right: CVE reference info and quick actions
+//! Architecture:
+//! - Left Panel: Vulnerability list with filter tabs (Severity/Asset/MITRE)
+//! - Middle Panel: Selected vulnerability details + associated findings
+//! - Right Panel: CVE database info and quick actions
+//!
+//! Vulnerability = User-defined knowledge base entry
+//! Finding = AI Agent discovery linked to a vulnerability
 
 use gpui::*;
 use gpui::prelude::FluentBuilder;
-use gpui_component::{h_flex, v_flex, label::Label, button::Button, button::ButtonVariants};
+use gpui_component::{h_flex, v_flex, label::Label, button::Button};
 use data::{VulnStore, VulnStoreEvent, init_and_load_vuln_store};
 use ui::theme::*;
 
-mod finding_list;
-mod finding_detail;
+mod vuln_list;
+mod vuln_detail;
 mod cve_info;
 
-pub use finding_list::*;
-pub use finding_detail::*;
+pub use vuln_list::*;
+pub use vuln_detail::*;
 pub use cve_info::*;
 
 /// Main VulnsPanel with 3-column layout
@@ -33,13 +36,16 @@ impl VulnsPanel {
         // Subscribe to VulnStore events
         let _subscription = cx.subscribe(&vuln_store, |_this, _store, event: &VulnStoreEvent, cx| {
             match event {
+                VulnStoreEvent::VulnerabilitiesUpdated => {
+                    cx.notify();
+                }
+                VulnStoreEvent::VulnerabilitySelected(_) => {
+                    cx.notify();
+                }
                 VulnStoreEvent::FindingsUpdated => {
                     cx.notify();
                 }
                 VulnStoreEvent::FindingSelected(_) => {
-                    cx.notify();
-                }
-                VulnStoreEvent::VulnReferenceLoaded(_) => {
                     cx.notify();
                 }
             }
@@ -54,9 +60,13 @@ impl VulnsPanel {
 
 impl Render for VulnsPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let findings = self.vuln_store.read(cx).findings().to_vec();
+        // Use filtered vulnerabilities based on search query
+        let vulnerabilities: Vec<_> = self.vuln_store.read(cx).filtered_vulnerabilities();
+        let selected_vuln = self.vuln_store.read(cx).selected_vulnerability().cloned();
+        let selected_vuln_id = selected_vuln.as_ref().map(|v| v.vulnerability.id.clone());
         let selected_finding = self.vuln_store.read(cx).selected_finding().cloned();
-        let vuln_reference = self.vuln_store.read(cx).selected_vuln_reference().cloned();
+        let group_by = self.vuln_store.read(cx).group_by();
+        let search_query = self.vuln_store.read(cx).search_query().to_string();
         let is_loading = self.vuln_store.read(cx).is_loading();
         let error = self.vuln_store.read(cx).last_error().map(|e| e.to_string());
 
@@ -65,41 +75,60 @@ impl Render for VulnsPanel {
             .gap(SPACING_MD)
             .p(SPACING_MD)
             .bg(rgb(BG_PRIMARY))
-            // Header with title and refresh button
-            .child(self.render_header(cx))
             // Error banner (if any)
             .children(error.map(|e| render_error_banner(&e, &self.vuln_store)))
-            // Main content
+            // Main content - three column layout with fixed widths
             .child(
                 h_flex()
                     .flex_1()
                     .gap(SPACING_MD)
-                    // Left column: Finding list
+                    // Left column: Fixed 320px, no shrink
                     .child(
                         v_flex()
-                            .w(px(300.0))
+                            .w(px(320.0))
                             .h_full()
-                            .child(finding_list::render_finding_list(&findings, &self.vuln_store))
+                            .flex_shrink_0()
+                            .child(vuln_list::render_vuln_list(
+                                &vulnerabilities,
+                                group_by,
+                                &self.vuln_store,
+                                selected_vuln_id,
+                                &search_query,
+                                cx,
+                            ))
                             .when(is_loading, |this| {
                                 this.child(render_loading_overlay("Loading vulnerabilities..."))
                             })
-                            .when(!is_loading && findings.is_empty(), |this| {
+                            .when(!is_loading && vulnerabilities.is_empty(), |this| {
                                 this.child(render_empty_state(
-                                    "No vulnerabilities found",
-                                    "Vulnerabilities will appear here when detected by scanners or AI analysis",
+                                    "No vulnerabilities defined",
+                                    "Vulnerabilities will appear here when defined by security experts or imported from CVE databases",
                                 ))
                             })
                     )
-                    // Middle column: Finding detail (if selected)
-                    .child(finding_detail::render_finding_detail(
-                        selected_finding.clone(),
-                    ))
-                    // Right column: CVE info and actions
-                    .child(cve_info::render_cve_info(
-                        selected_finding,
-                        vuln_reference,
-                        &self.vuln_store,
-                    ))
+                    // Middle column: Flexible, but with min/max constraints
+                    .child(
+                        v_flex()
+                            .flex_1()
+                            .h_full()
+                            .min_w(px(400.0))
+                            .child(vuln_detail::render_vuln_detail(
+                                selected_vuln.clone(),
+                                selected_finding,
+                                &self.vuln_store,
+                            ))
+                    )
+                    // Right column: Fixed 260px, no shrink
+                    .child(
+                        v_flex()
+                            .w(px(260.0))
+                            .h_full()
+                            .flex_shrink_0()
+                            .child(cve_info::render_cve_info(
+                                selected_vuln,
+                                &self.vuln_store,
+                            ))
+                    )
             )
     }
 }
@@ -154,36 +183,6 @@ pub fn status_label(status: &data::models::FindingStatus) -> &'static str {
     }
 }
 
-impl VulnsPanel {
-    /// Render the panel header with title and refresh button
-    fn render_header(&self, cx: &Context<Self>) -> impl IntoElement {
-        let vuln_store = self.vuln_store.clone();
-        h_flex()
-            .h(px(48.0))
-            .px(SPACING_MD)
-            .items_center()
-            .justify_between()
-            .bg(rgb(BG_CARD))
-            .rounded_md()
-            .child(
-                Label::new("Vulnerabilities")
-                    .text_size(TEXT_SIZE_XL)
-                    .font_weight(FontWeight::SEMIBOLD)
-            )
-            .child(
-                Button::new("refresh")
-                    .label("Refresh")
-                    .on_click(move |_event, _window, cx| {
-                        vuln_store.update(cx, |store, cx| {
-                            if let Err(e) = store.load_findings(cx) {
-                                eprintln!("Failed to reload findings: {}", e);
-                            }
-                        });
-                    })
-            )
-    }
-}
-
 /// Render error banner
 fn render_error_banner(error: &str, vuln_store: &Entity<VulnStore>) -> impl IntoElement {
     let vuln_store = vuln_store.clone();
@@ -223,7 +222,7 @@ fn render_loading_overlay(message: &str) -> impl IntoElement {
                 .gap(SPACING_MD)
                 .items_center()
                 .child(
-                    // Simple spinner using a rotating element
+                    // Simple spinner
                     h_flex()
                         .w(px(32.0))
                         .h(px(32.0))

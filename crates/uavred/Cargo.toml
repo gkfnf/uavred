@@ -20,6 +20,7 @@ vulns_ui = { path = "../vulns_ui" }
 scan_ui = { path = "../scan_ui" }
 traffic_ui = { path = "../traffic_ui" }
 flows_ui = { path = "../flows_ui" }
+settings_ui = { path = "../settings_ui" }
 data = { path = "../data" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

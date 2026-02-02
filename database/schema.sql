@@ -200,6 +200,9 @@ CREATE TABLE IF NOT EXISTS vulnerabilities (
     exploit_available INTEGER DEFAULT 0,
     exploit_complexity TEXT DEFAULT '', -- easy, medium, hard
     
+    -- MITRE ATT&CK
+    mitre_techniques TEXT DEFAULT '[]', -- JSON array ["T0806", "T0868"]
+    
     -- Metadata
     disclosure_date DATE,
     solution TEXT DEFAULT '',

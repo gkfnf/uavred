@@ -1,5 +1,6 @@
 use parking_lot::Mutex;
 use std::sync::Arc;
+use workspace::AppView;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScanStatus {
@@ -14,6 +15,7 @@ pub struct AppState {
     pub scan_status: Arc<Mutex<ScanStatus>>,
     pub active_ai_agent: Arc<Mutex<Option<String>>>,
     pub is_dev_mode: bool,
+    pub active_view: Arc<Mutex<AppView>>,
 }
 
 impl gpui::Global for AppState {}
@@ -25,6 +27,7 @@ impl AppState {
             scan_status: Arc::new(Mutex::new(ScanStatus::Idle)),
             active_ai_agent: Arc::new(Mutex::new(None)),
             is_dev_mode: cfg!(debug_assertions),
+            active_view: Arc::new(Mutex::new(AppView::Dashboard)),
         }
     }
 
@@ -50,5 +53,13 @@ impl AppState {
 
     pub fn get_active_ai_agent(&self) -> Option<String> {
         self.active_ai_agent.lock().clone()
+    }
+
+    pub fn set_active_view(&self, view: AppView) {
+        *self.active_view.lock() = view;
+    }
+
+    pub fn get_active_view(&self) -> AppView {
+        *self.active_view.lock()
     }
 }

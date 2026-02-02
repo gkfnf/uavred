@@ -8,6 +8,7 @@ gpui = { git = "https://github.com/zed-industries/zed" }
 gpui-component = { path = "../../src/gpui-component/crates/ui", package = "gpui-component" }
 data = { path = "../data" }
 ui = { path = "../ui" }
+workspace = { path = "../workspace" }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 collections = { git = "https://github.com/zed-industries/zed", package = "collections" }

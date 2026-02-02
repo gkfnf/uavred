@@ -6,6 +6,13 @@ edition = "2021"
 [dependencies]
 gpui = { workspace = true }
 gpui-component = { workspace = true }
+gpui-wry = { path = "../../src/gpui-component/crates/webview" }
 workspace = { path = "../workspace" }
+workspace_ui = { path = "../workspace_ui" }
 ui = { path = "../ui" }
 data = { path = "../data" }
+tracing = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+wry = { version = "0.53.3", package = "lb-wry" }
+raw-window-handle = "0.6"

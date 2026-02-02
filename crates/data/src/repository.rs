@@ -53,7 +53,35 @@ impl Database {
     }
     
     pub fn open_local() -> Result<Self> {
-        let path = Self::local_path();
+        // Try to find database relative to executable or current dir
+        let path = if std::path::Path::new("database/uavred.db").exists() {
+            std::path::PathBuf::from("database/uavred.db")
+        } else if let Ok(cwd) = std::env::current_dir() {
+            // Try relative to current working directory
+            let cwd_db = cwd.join("database/uavred.db");
+            if cwd_db.exists() {
+                cwd_db
+            } else if let Ok(exe_path) = std::env::current_exe() {
+                // Try relative to executable
+                if let Some(exe_dir) = exe_path.parent() {
+                    let relative_to_exe = exe_dir.join("database/uavred.db");
+                    if relative_to_exe.exists() {
+                        relative_to_exe
+                    } else {
+                        cwd_db
+                    }
+                } else {
+                    cwd_db
+                }
+            } else {
+                cwd_db
+            }
+        } else {
+            std::path::PathBuf::from("database/uavred.db")
+        };
+        
+        tracing::info!("Opening database at: {:?}", path);
+        
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -82,6 +110,10 @@ impl Database {
 
     pub fn vulnerabilities(&self) -> VulnerabilityRepository {
         VulnerabilityRepository::new(self.connection.clone())
+    }
+
+    pub fn assets(&self) -> AssetRepository {
+        AssetRepository::new(self.connection.clone())
     }
 }
 
@@ -363,6 +395,27 @@ impl FindingRepository {
             String, String, String, String, Option<String>,
             Option<String>, String, String, String
         )>(sql)?(status.as_str())?;
+
+        rows.into_iter().map(|row| self.row_to_finding(row)).collect()
+    }
+
+    /// List findings by vulnerability ID
+    pub fn list_by_vulnerability(&self, vuln_id: &str) -> Result<Vec<Finding>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, vuln_id, asset_id, service_id, task_id, title, description, evidence,
+                   severity, cvss_score, status, ai_confidence, ai_analysis, ai_recommendation,
+                   poc_code, poc_language, mitre_techniques, remediation_steps, remediation_eta,
+                   remediated_at, remediated_by, detected_at, detected_by
+            FROM findings WHERE vuln_id = ?1
+        "#;
+
+        let rows = conn.select_bound::<&str, (
+            i64, Option<String>, i64, Option<i64>, Option<i64>, String, String, String,
+            String, Option<f64>, String, Option<i32>, String, String,
+            String, String, String, String, Option<String>,
+            Option<String>, String, String, String
+        )>(sql)?(vuln_id)?;
 
         rows.into_iter().map(|row| self.row_to_finding(row)).collect()
     }
@@ -840,14 +893,14 @@ impl VulnerabilityRepository {
         let conn = self.connection.lock().unwrap();
         let sql = r#"
             SELECT id, name, description, vuln_type, severity, cvss_score, cvss_vector,
-                   cve_id, cwe_id, affected_systems, affected_versions, exploit_available,
+                   cve_id, cwe_id, mitre_techniques, affected_systems, affected_versions, exploit_available,
                    exploit_complexity, solution, ref_urls, created_at, updated_at
             FROM vulnerabilities WHERE id = ?1
         "#;
 
         let rows = conn.select_bound::<&str, (
             String, String, String, String, String, Option<f64>, String,
-            String, String, String, String, i64, String, String, String, String, String
+            String, String, String, String, String, i64, String, String, String, String, String
         )>(sql)?(id)?;
 
         Ok(rows.into_iter().next().map(|row| self.row_to_vulnerability(row).ok()).flatten())
@@ -858,14 +911,14 @@ impl VulnerabilityRepository {
         let conn = self.connection.lock().unwrap();
         let sql = r#"
             SELECT id, name, description, vuln_type, severity, cvss_score, cvss_vector,
-                   cve_id, cwe_id, affected_systems, affected_versions, exploit_available,
+                   cve_id, cwe_id, mitre_techniques, affected_systems, affected_versions, exploit_available,
                    exploit_complexity, solution, ref_urls, created_at, updated_at
             FROM vulnerabilities WHERE cve_id = ?1
         "#;
 
         let rows = conn.select_bound::<&str, (
             String, String, String, String, String, Option<f64>, String,
-            String, String, String, String, i64, String, String, String, String, String
+            String, String, String, String, String, i64, String, String, String, String, String
         )>(sql)?(cve_id)?;
 
         Ok(rows.into_iter().next().map(|row| self.row_to_vulnerability(row).ok()).flatten())
@@ -876,34 +929,116 @@ impl VulnerabilityRepository {
         let conn = self.connection.lock().unwrap();
         let sql = r#"
             SELECT id, name, description, vuln_type, severity, cvss_score, cvss_vector,
-                   cve_id, cwe_id, affected_systems, affected_versions, exploit_available,
+                   cve_id, cwe_id, mitre_techniques, affected_systems, affected_versions, exploit_available,
                    exploit_complexity, solution, ref_urls, created_at, updated_at
             FROM vulnerabilities
-            ORDER BY CASE severity
-                WHEN 'critical' THEN 1
-                WHEN 'high' THEN 2
-                WHEN 'medium' THEN 3
-                WHEN 'low' THEN 4
-                ELSE 5
-            END, cvss_score DESC
         "#;
 
         let rows: Vec<(
             String, String, String, String, String, Option<f64>, String,
-            String, String, String, String, i64, String, String, String, String, String
+            String, String, String, String, String, i64, String, String, String, String, String
         )> = conn.select(sql)?()?;
 
         rows.into_iter().map(|row| self.row_to_vulnerability(row)).collect()
     }
 
+    /// Create a new vulnerability
+    pub fn create(&self, vuln: &Vulnerability) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            INSERT INTO vulnerabilities (
+                id, name, description, vuln_type, severity, cvss_score, cvss_vector,
+                cve_id, cwe_id, mitre_techniques, affected_systems, affected_versions, exploit_available,
+                exploit_complexity, solution, ref_urls
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+        "#;
+
+        let mitre_techniques_json = serde_json::to_string(&vuln.mitre_techniques).unwrap_or_default();
+        let affected_systems_json = serde_json::to_string(&vuln.affected_systems).unwrap_or_default();
+        let ref_urls_json = serde_json::to_string(&vuln.ref_urls).unwrap_or_default();
+
+        conn.exec_bound::<(
+            &str, &str, &str, &str, &str, Option<f64>, &str,
+            &str, &str, &str, &str, &str, i64, &str, &str, &str
+        )>(sql)?((
+            &vuln.id,
+            &vuln.name,
+            &vuln.description,
+            &vuln.vuln_type,
+            vuln.severity.as_str(),
+            vuln.cvss_score,
+            &vuln.cvss_vector,
+            &vuln.cve_id,
+            &vuln.cwe_id,
+            &mitre_techniques_json,
+            &affected_systems_json,
+            &vuln.affected_versions,
+            if vuln.exploit_available { 1 } else { 0 },
+            &vuln.exploit_complexity,
+            &vuln.solution,
+            &ref_urls_json,
+        ))?;
+        Ok(())
+    }
+
+    /// Update a vulnerability
+    pub fn update(&self, vuln: &Vulnerability) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            UPDATE vulnerabilities SET
+                name = ?1, description = ?2, vuln_type = ?3, severity = ?4,
+                cvss_score = ?5, cvss_vector = ?6, cve_id = ?7, cwe_id = ?8,
+                mitre_techniques = ?9, affected_systems = ?10, affected_versions = ?11,
+                exploit_available = ?12, exploit_complexity = ?13, solution = ?14, ref_urls = ?15,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?16
+        "#;
+
+        let mitre_techniques_json = serde_json::to_string(&vuln.mitre_techniques).unwrap_or_default();
+        let affected_systems_json = serde_json::to_string(&vuln.affected_systems).unwrap_or_default();
+        let ref_urls_json = serde_json::to_string(&vuln.ref_urls).unwrap_or_default();
+
+        conn.exec_bound::<(
+            &str, &str, &str, &str, Option<f64>, &str, &str, &str,
+            &str, &str, &str, i64, &str, &str, &str, &str
+        )>(sql)?((
+            &vuln.name,
+            &vuln.description,
+            &vuln.vuln_type,
+            vuln.severity.as_str(),
+            vuln.cvss_score,
+            &vuln.cvss_vector,
+            &vuln.cve_id,
+            &vuln.cwe_id,
+            &mitre_techniques_json,
+            &affected_systems_json,
+            &vuln.affected_versions,
+            if vuln.exploit_available { 1 } else { 0 },
+            &vuln.exploit_complexity,
+            &vuln.solution,
+            &ref_urls_json,
+            &vuln.id,
+        ))?;
+        Ok(())
+    }
+
+    /// Delete a vulnerability
+    pub fn delete(&self, id: &str) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        conn.exec_bound::<&str>("DELETE FROM vulnerabilities WHERE id = ?1")?(id)?;
+        Ok(())
+    }
+
     fn row_to_vulnerability(&self, row: (
         String, String, String, String, String, Option<f64>, String,
-        String, String, String, String, i64, String, String, String, String, String
+        String, String, String, String, String, i64, String, String, String, String, String
     )) -> Result<Vulnerability> {
         let (id, name, description, vuln_type, severity_str, cvss_score, cvss_vector,
-             cve_id, cwe_id, affected_systems_json, affected_versions, exploit_available,
-             exploit_complexity, solution, ref_urls_json, created_at_str, updated_at_str) = row;
+             cve_id, cwe_id, mitre_techniques_json, affected_systems_json, affected_versions, 
+             exploit_available, exploit_complexity, solution, ref_urls_json, created_at_str, 
+             updated_at_str) = row;
 
+        let mitre_techniques = serde_json::from_str(&mitre_techniques_json).unwrap_or_default();
         let affected_systems = serde_json::from_str(&affected_systems_json).unwrap_or_default();
         let ref_urls = serde_json::from_str(&ref_urls_json).unwrap_or_default();
 
@@ -917,6 +1052,7 @@ impl VulnerabilityRepository {
             cvss_vector,
             cve_id,
             cwe_id,
+            mitre_techniques,
             affected_systems,
             affected_versions,
             exploit_available: exploit_available != 0,
@@ -926,6 +1062,553 @@ impl VulnerabilityRepository {
             ref_urls,
             created_at: parse_datetime(&created_at_str)?,
             updated_at: parse_datetime(&updated_at_str)?,
+        })
+    }
+}
+
+pub struct AssetRepository {
+    connection: Arc<Mutex<Connection>>,
+}
+
+impl AssetRepository {
+    pub fn new(connection: Arc<Mutex<Connection>>) -> Self {
+        Self { connection }
+    }
+
+    /// Create a new asset
+    pub fn create(&self, asset: &Asset) -> Result<i64> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            INSERT INTO assets (
+                name, asset_type, zone_id, ip_address, mac_address, status,
+                risk_score, vuln_count, model, firmware_version, protocol,
+                auth_type, auth_status, auth_credential,
+                business_purpose, owner_team, compliance_standards,
+                last_scan_at, scan_interval_minutes
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
+        "#;
+
+        let compliance_json = serde_json::to_string(&asset.compliance_standards).unwrap_or_default();
+        let last_scan_str = asset.last_scan_at.map(|d| d.to_rfc3339());
+
+        conn.exec_bound::<(
+            &str, &str, Option<&str>, Option<&str>, Option<&str>, &str,
+            i32, i32, &str, &str, &str,
+            &str, &str, &str,
+            &str, &str, &str,
+            Option<&str>, i32
+        )>(sql)?((
+            &asset.name, &asset.asset_type, asset.zone_id.as_deref(), asset.ip_address.as_deref(), 
+            asset.mac_address.as_deref(), asset.status.as_str(),
+            asset.risk_score, asset.vuln_count, &asset.model, &asset.firmware_version, &asset.protocol,
+            &asset.auth_type, &asset.auth_status, &asset.auth_credential,
+            &asset.business_purpose, &asset.owner_team, &compliance_json,
+            last_scan_str.as_deref(), asset.scan_interval_minutes,
+        ))?;
+
+        let id: i64 = conn.select::<i64>("SELECT last_insert_rowid()")?()?
+            .into_iter().next().unwrap_or(0);
+        Ok(id)
+    }
+
+    /// Get asset by ID with related services and connections
+    pub fn get_by_id(&self, id: i64) -> Result<Option<Asset>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, name, asset_type, zone_id, ip_address, mac_address, status,
+                   risk_score, vuln_count, model, firmware_version, protocol,
+                   auth_type, auth_status, auth_credential,
+                   business_purpose, owner_team, compliance_standards,
+                   last_scan_at, scan_interval_minutes, created_at, updated_at,
+                   network_segment, accessible_networks
+            FROM assets WHERE id = ?1
+        "#;
+
+        let rows = conn.select_bound::<i64, (
+            i64, String, String, Option<String>, Option<String>, Option<String>, String,
+            i32, i32, String, String, String,
+            String, String, String,
+            String, String, String,
+            Option<String>, i32, String, String,
+            String, String
+        )>(sql)?(id)?;
+
+        if let Some(row) = rows.into_iter().next() {
+            let mut asset = self.row_to_asset(row)?;
+            // Load related data
+            drop(conn);
+            asset.services = self.get_services(asset.id)?;
+            asset.connections = self.get_connections(asset.id)?;
+            Ok(Some(asset))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// List all assets
+    pub fn list_all(&self) -> Result<Vec<Asset>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, name, asset_type, zone_id, ip_address, mac_address, status,
+                   risk_score, vuln_count, model, firmware_version, protocol,
+                   auth_type, auth_status, auth_credential,
+                   business_purpose, owner_team, compliance_standards,
+                   last_scan_at, scan_interval_minutes, created_at, updated_at,
+                   network_segment, accessible_networks
+            FROM assets
+            ORDER BY created_at DESC
+        "#;
+
+        let rows: Vec<(
+            i64, String, String, Option<String>, Option<String>, Option<String>, String,
+            i32, i32, String, String, String,
+            String, String, String,
+            String, String, String,
+            Option<String>, i32, String, String,
+            String, String
+        )> = conn.select(sql)?()?;
+
+        rows.into_iter().map(|row| self.row_to_asset(row)).collect()
+    }
+
+    /// List assets by zone
+    pub fn list_by_zone(&self, zone_id: &str) -> Result<Vec<Asset>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, name, asset_type, zone_id, ip_address, mac_address, status,
+                   risk_score, vuln_count, model, firmware_version, protocol,
+                   auth_type, auth_status, auth_credential,
+                   business_purpose, owner_team, compliance_standards,
+                   last_scan_at, scan_interval_minutes, created_at, updated_at,
+                   network_segment, accessible_networks
+            FROM assets WHERE zone_id = ?1
+            ORDER BY created_at DESC
+        "#;
+
+        let rows = conn.select_bound::<&str, (
+            i64, String, String, Option<String>, Option<String>, Option<String>, String,
+            i32, i32, String, String, String,
+            String, String, String,
+            String, String, String,
+            Option<String>, i32, String, String,
+            String, String
+        )>(sql)?(zone_id)?;
+
+        rows.into_iter().map(|row| self.row_to_asset(row)).collect()
+    }
+
+    /// Update asset
+    pub fn update(&self, asset: &Asset) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            UPDATE assets SET
+                name = ?1, asset_type = ?2, zone_id = ?3, ip_address = ?4, mac_address = ?5,
+                status = ?6, risk_score = ?7, vuln_count = ?8, model = ?9,
+                firmware_version = ?10, protocol = ?11, auth_type = ?12,
+                auth_status = ?13, auth_credential = ?14, business_purpose = ?15,
+                owner_team = ?16, compliance_standards = ?17, last_scan_at = ?18,
+                scan_interval_minutes = ?19, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?20
+        "#;
+
+        let compliance_json = serde_json::to_string(&asset.compliance_standards).unwrap_or_default();
+        let last_scan_str = asset.last_scan_at.map(|d| d.to_rfc3339());
+
+        conn.exec_bound::<(
+            &str, &str, Option<&str>, Option<&str>, Option<&str>, &str,
+            i32, i32, &str, &str, &str,
+            &str, &str, &str,
+            &str, &str, &str,
+            Option<&str>, i32, i64
+        )>(sql)?((
+            &asset.name, &asset.asset_type, asset.zone_id.as_deref(), asset.ip_address.as_deref(),
+            asset.mac_address.as_deref(), asset.status.as_str(),
+            asset.risk_score, asset.vuln_count, &asset.model, &asset.firmware_version, &asset.protocol,
+            &asset.auth_type, &asset.auth_status, &asset.auth_credential,
+            &asset.business_purpose, &asset.owner_team, &compliance_json,
+            last_scan_str.as_deref(), asset.scan_interval_minutes,
+            asset.id,
+        ))?;
+        Ok(())
+    }
+
+    /// Delete asset (cascades to services and connections)
+    pub fn delete(&self, id: i64) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        conn.exec_bound::<i64>("DELETE FROM assets WHERE id = ?1")?(id)?;
+        Ok(())
+    }
+
+    /// Update asset status
+    pub fn update_status(&self, id: i64, status: AssetStatus) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        let sql = "UPDATE assets SET status = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2";
+        conn.exec_bound::<(&str, i64)>(sql)?((status.as_str(), id))?;
+        Ok(())
+    }
+
+    /// Update asset zone
+    pub fn update_zone(&self, id: i64, zone_id: Option<&str>) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        let sql = "UPDATE assets SET zone_id = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2";
+        conn.exec_bound::<(Option<&str>, i64)>(sql)?((zone_id, id))?;
+        Ok(())
+    }
+
+    /// Search assets by name, IP, or type
+    pub fn search(&self, query: &str) -> Result<Vec<Asset>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, name, asset_type, zone_id, ip_address, mac_address, status,
+                   risk_score, vuln_count, model, firmware_version, protocol,
+                   auth_type, auth_status, auth_credential,
+                   business_purpose, owner_team, compliance_standards,
+                   last_scan_at, scan_interval_minutes, created_at, updated_at,
+                   network_segment, accessible_networks
+            FROM assets
+            WHERE name LIKE ?1 OR ip_address LIKE ?1 OR asset_type LIKE ?1
+            ORDER BY created_at DESC
+        "#;
+
+        let search_pattern = format!("%{}%", query);
+        let rows = conn.select_bound::<String, (
+            i64, String, String, Option<String>, Option<String>, Option<String>, String,
+            i32, i32, String, String, String,
+            String, String, String,
+            String, String, String,
+            Option<String>, i32, String, String,
+            String, String
+        )>(sql)?(search_pattern)?;
+
+        rows.into_iter().map(|row| self.row_to_asset(row)).collect()
+    }
+
+    // ============================================
+    // Asset Services
+    // ============================================
+
+    /// Get services for an asset
+    pub fn get_services(&self, asset_id: i64) -> Result<Vec<AssetService>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, asset_id, port, protocol, service_name, service_version, banner, is_vulnerable, detected_at
+            FROM asset_services WHERE asset_id = ?1
+            ORDER BY port
+        "#;
+
+        let rows = conn.select_bound::<i64, (
+            i64, i64, i32, String, String, String, String, i64, String
+        )>(sql)?(asset_id)?;
+
+        rows.into_iter().map(|(id, asset_id, port, protocol, service_name, service_version, banner, is_vulnerable, detected_at_str)| {
+            Ok(AssetService {
+                id, asset_id, port, protocol, service_name, service_version, banner,
+                is_vulnerable: is_vulnerable != 0,
+                detected_at: parse_datetime(&detected_at_str)?,
+            })
+        }).collect()
+    }
+
+    /// Add service to asset
+    pub fn add_service(&self, asset_id: i64, service: &AssetService) -> Result<i64> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            INSERT INTO asset_services (asset_id, port, protocol, service_name, service_version, banner, is_vulnerable)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        "#;
+
+        conn.exec_bound::<(i64, i32, &str, &str, &str, &str, i64)>(sql)?((
+            asset_id, service.port, &service.protocol, &service.service_name,
+            &service.service_version, &service.banner,
+            if service.is_vulnerable { 1 } else { 0 },
+        ))?;
+
+        let id: i64 = conn.select::<i64>("SELECT last_insert_rowid()")?()?
+            .into_iter().next().unwrap_or(0);
+        Ok(id)
+    }
+
+    /// Delete service
+    pub fn delete_service(&self, service_id: i64) -> Result<()> {
+        let conn = self.connection.lock().unwrap();
+        conn.exec_bound::<i64>("DELETE FROM asset_services WHERE id = ?1")?(service_id)?;
+        Ok(())
+    }
+
+    // ============================================
+    // Asset Connections (Topology)
+    // ============================================
+
+    /// Get connections for an asset (both source and target)
+    pub fn get_connections(&self, asset_id: i64) -> Result<Vec<AssetConnection>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, source_asset_id, target_asset_id, connection_type, protocol, is_active, created_at
+            FROM asset_connections
+            WHERE source_asset_id = ?1 OR target_asset_id = ?1
+        "#;
+
+        let rows = conn.select_bound::<i64, (
+            i64, i64, i64, String, String, i64, String
+        )>(sql)?(asset_id)?;
+
+        rows.into_iter().map(|(id, source_asset_id, target_asset_id, connection_type, protocol, is_active, created_at_str)| {
+            Ok(AssetConnection {
+                id, source_asset_id, target_asset_id, connection_type, protocol,
+                is_active: is_active != 0,
+                created_at: parse_datetime(&created_at_str)?,
+            })
+        }).collect()
+    }
+
+    /// Get all connections (for topology)
+    pub fn get_all_connections(&self) -> Result<Vec<AssetConnection>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, source_asset_id, target_asset_id, connection_type, protocol, is_active, created_at
+            FROM asset_connections
+        "#;
+
+        let rows: Vec<(i64, i64, i64, String, String, i64, String)> = conn.select(sql)?()?;
+
+        rows.into_iter().map(|(id, source_asset_id, target_asset_id, connection_type, protocol, is_active, created_at_str)| {
+            Ok(AssetConnection {
+                id, source_asset_id, target_asset_id, connection_type, protocol,
+                is_active: is_active != 0,
+                created_at: parse_datetime(&created_at_str)?,
+            })
+        }).collect()
+    }
+
+    /// Add connection between assets
+    pub fn add_connection(&self, connection: &AssetConnection) -> Result<i64> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            INSERT INTO asset_connections (source_asset_id, target_asset_id, connection_type, protocol, is_active)
+            VALUES (?1, ?2, ?3, ?4, ?5)
+        "#;
+
+        conn.exec_bound::<(i64, i64, &str, &str, i64)>(sql)?((
+            connection.source_asset_id, connection.target_asset_id,
+            &connection.connection_type, &connection.protocol,
+            if connection.is_active { 1 } else { 0 },
+        ))?;
+
+        let id: i64 = conn.select::<i64>("SELECT last_insert_rowid()")?()?
+            .into_iter().next().unwrap_or(0);
+        Ok(id)
+    }
+
+    // ============================================
+    // Network ACL Methods
+    // ============================================
+
+    /// Get all network ACLs
+    pub fn get_network_acls(&self) -> Result<Vec<NetworkAcl>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, source_asset_id, target_asset_id, protocol, port_range, 
+                   action, direction, description, priority, is_active, created_at
+            FROM network_acls WHERE is_active = 1
+            ORDER BY priority
+        "#;
+
+        let rows: Vec<(i64, i64, i64, String, String, String, String, String, i32, i64, String)> = 
+            conn.select(sql)?()?;
+
+        rows.into_iter().map(|(id, source_id, target_id, protocol, port_range, 
+                              action_str, direction_str, description, priority, is_active, created_at_str)| {
+            Ok(NetworkAcl {
+                id,
+                source_asset_id: source_id,
+                target_asset_id: target_id,
+                protocol,
+                port_range,
+                action: AclAction::from(action_str.as_str()),
+                direction: AclDirection::from(direction_str.as_str()),
+                description,
+                priority,
+                is_active: is_active != 0,
+                created_at: parse_datetime(&created_at_str)?,
+            })
+        }).collect()
+    }
+
+    /// Get ACLs for a specific asset (as source or target)
+    pub fn get_asset_acls(&self, asset_id: i64) -> Result<Vec<NetworkAcl>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT id, source_asset_id, target_asset_id, protocol, port_range, 
+                   action, direction, description, priority, is_active, created_at
+            FROM network_acls 
+            WHERE is_active = 1 AND (source_asset_id = ?1 OR target_asset_id = ?1)
+            ORDER BY priority
+        "#;
+
+        let rows = conn.select_bound::<i64, (i64, i64, i64, String, String, String, String, String, i32, i64, String)>(sql)?(asset_id)?;
+
+        rows.into_iter().map(|(id, source_id, target_id, protocol, port_range, 
+                              action_str, direction_str, description, priority, is_active, created_at_str)| {
+            Ok(NetworkAcl {
+                id,
+                source_asset_id: source_id,
+                target_asset_id: target_id,
+                protocol,
+                port_range,
+                action: AclAction::from(action_str.as_str()),
+                direction: AclDirection::from(direction_str.as_str()),
+                description,
+                priority,
+                is_active: is_active != 0,
+                created_at: parse_datetime(&created_at_str)?,
+            })
+        }).collect()
+    }
+
+    /// Get network links with ACL info for topology visualization
+    pub fn get_network_links(&self) -> Result<Vec<NetworkLink>> {
+        let conn = self.connection.lock().unwrap();
+        let sql = r#"
+            SELECT source_asset_id, target_asset_id, protocol, port_range, 
+                   action, direction, description
+            FROM network_acls 
+            WHERE is_active = 1
+            ORDER BY priority
+        "#;
+
+        let rows: Vec<(i64, i64, String, String, String, String, String)> = conn.select(sql)?()?;
+
+        Ok(rows.into_iter().map(|(source_id, target_id, protocol, port_range, 
+                                  action_str, direction_str, description)| {
+            NetworkLink {
+                source_id,
+                target_id,
+                protocol,
+                port_range,
+                action: AclAction::from(action_str.as_str()),
+                direction: AclDirection::from(direction_str.as_str()),
+                description,
+            }
+        }).collect())
+    }
+
+    /// Calculate network reachability connections based on accessible_networks
+    /// Returns pairs of (source_asset_id, target_asset_id) where source can reach target
+    pub fn calculate_network_reachability(&self) -> Result<Vec<(i64, i64, String)>> {
+        let assets = self.list_all()?;
+        let mut connections = Vec::new();
+
+        for source in &assets {
+            if source.accessible_networks.is_empty() || source.ip_address.is_none() {
+                continue;
+            }
+
+            for target in &assets {
+                if source.id == target.id || target.ip_address.is_none() {
+                    continue;
+                }
+
+                // Check if target's IP is in any of source's accessible networks
+                if let Some(ref target_ip) = target.ip_address {
+                    if Self::ip_matches_networks(target_ip, &source.accessible_networks) {
+                        let target_segment = target.network_segment.clone();
+                        connections.push((source.id, target.id, target_segment));
+                    }
+                }
+            }
+        }
+
+        Ok(connections)
+    }
+
+    /// Check if an IP address matches any of the network CIDRs
+    fn ip_matches_networks(ip: &str, networks: &[String]) -> bool {
+        use std::net::Ipv4Addr;
+        
+        let ip_parts: Vec<u8> = ip.split('.')
+            .filter_map(|s| s.parse().ok())
+            .collect();
+        
+        if ip_parts.len() != 4 {
+            return false;
+        }
+
+        let ip_u32 = ((ip_parts[0] as u32) << 24) |
+                     ((ip_parts[1] as u32) << 16) |
+                     ((ip_parts[2] as u32) << 8) |
+                     (ip_parts[3] as u32);
+
+        for network in networks {
+            // Handle CIDR notation like "192.168.1.0/24"
+            if let Some((net_ip, mask_str)) = network.split_once('/') {
+                if let Ok(mask_bits) = mask_str.parse::<u32>() {
+                    let net_parts: Vec<u8> = net_ip.split('.')
+                        .filter_map(|s| s.parse().ok())
+                        .collect();
+                    
+                    if net_parts.len() == 4 {
+                        let net_u32 = ((net_parts[0] as u32) << 24) |
+                                      ((net_parts[1] as u32) << 16) |
+                                      ((net_parts[2] as u32) << 8) |
+                                      (net_parts[3] as u32);
+                        
+                        let mask = if mask_bits == 0 {
+                            0
+                        } else {
+                            !((1u32 << (32 - mask_bits)) - 1)
+                        };
+                        
+                        if (ip_u32 & mask) == (net_u32 & mask) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            // Handle "0.0.0.0/0" as wildcard (access to all)
+            if network == "0.0.0.0/0" || network == "any" {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    // ============================================
+    // Helper Methods
+    // ============================================
+
+    fn row_to_asset(&self, row: (
+        i64, String, String, Option<String>, Option<String>, Option<String>, String,
+        i32, i32, String, String, String,
+        String, String, String,
+        String, String, String,
+        Option<String>, i32, String, String,
+        String, String
+    )) -> Result<Asset> {
+        let (id, name, asset_type, zone_id, ip_address, mac_address, status_str,
+             risk_score, vuln_count, model, firmware_version, protocol,
+             auth_type, auth_status, auth_credential,
+             business_purpose, owner_team, compliance_json,
+             last_scan_str, scan_interval_minutes, created_at_str, updated_at_str,
+             network_segment, accessible_networks_json) = row;
+
+        let compliance_standards: Vec<String> = serde_json::from_str(&compliance_json).unwrap_or_default();
+        let accessible_networks: Vec<String> = serde_json::from_str(&accessible_networks_json).unwrap_or_default();
+        let last_scan_at = last_scan_str.and_then(|s| parse_datetime(&s).ok());
+
+        Ok(Asset {
+            id, name, asset_type, zone_id, ip_address, mac_address,
+            status: AssetStatus::from(status_str.as_str()),
+            risk_score, vuln_count, model, firmware_version, protocol,
+            auth_type, auth_status, auth_credential,
+            business_purpose, owner_team, compliance_standards,
+            last_scan_at, scan_interval_minutes,
+            network_segment, accessible_networks,
+            created_at: parse_datetime(&created_at_str)?,
+            updated_at: parse_datetime(&updated_at_str)?,
+            services: Vec::new(),
+            connections: Vec::new(),
         })
     }
 }

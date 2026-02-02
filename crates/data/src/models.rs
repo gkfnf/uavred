@@ -249,6 +249,9 @@ pub struct Asset {
     pub scan_interval_minutes: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    // Network segmentation fields
+    pub network_segment: String, // 所在网段，如 "192.168.1.0/24"
+    pub accessible_networks: Vec<String>, // 可访问的网段列表
     // Related data
     #[serde(skip)]
     pub services: Vec<AssetService>,
@@ -280,11 +283,97 @@ pub struct AssetConnection {
     pub created_at: DateTime<Utc>,
 }
 
+/// Network ACL Action
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum AclAction {
+    Allow,
+    Deny,
+    Drop,
+}
+
+impl AclAction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AclAction::Allow => "allow",
+            AclAction::Deny => "deny",
+            AclAction::Drop => "drop",
+        }
+    }
+}
+
+impl From<&str> for AclAction {
+    fn from(s: &str) -> Self {
+        match s {
+            "allow" => AclAction::Allow,
+            "deny" => AclAction::Deny,
+            "drop" => AclAction::Drop,
+            _ => AclAction::Deny,
+        }
+    }
+}
+
+/// Network ACL Direction
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum AclDirection {
+    Outbound,
+    Inbound,
+    Bidirectional,
+}
+
+impl AclDirection {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AclDirection::Outbound => "outbound",
+            AclDirection::Inbound => "inbound",
+            AclDirection::Bidirectional => "bidirectional",
+        }
+    }
+}
+
+impl From<&str> for AclDirection {
+    fn from(s: &str) -> Self {
+        match s {
+            "outbound" => AclDirection::Outbound,
+            "inbound" => AclDirection::Inbound,
+            "bidirectional" => AclDirection::Bidirectional,
+            _ => AclDirection::Bidirectional,
+        }
+    }
+}
+
+/// Network ACL - Access Control List for asset communication
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetworkAcl {
+    pub id: i64,
+    pub source_asset_id: i64,
+    pub target_asset_id: i64,
+    pub protocol: String,
+    pub port_range: String,
+    pub action: AclAction,
+    pub direction: AclDirection,
+    pub description: String,
+    pub priority: i32,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Network link with ACL information for topology visualization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetworkLink {
+    pub source_id: i64,
+    pub target_id: i64,
+    pub protocol: String,
+    pub port_range: String,
+    pub action: AclAction,
+    pub direction: AclDirection,
+    pub description: String,
+}
+
 // ============================================
 // 3. VULNERABILITIES MODELS
 // ============================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum Severity {
     Info,
     Low,
@@ -339,6 +428,7 @@ pub struct Vulnerability {
     pub cvss_vector: String,
     pub cve_id: String,
     pub cwe_id: String,
+    pub mitre_techniques: Vec<String>,
     pub affected_systems: Vec<String>,
     pub affected_versions: String,
     pub exploit_available: bool,

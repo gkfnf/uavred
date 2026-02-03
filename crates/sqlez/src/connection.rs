@@ -129,11 +129,9 @@ impl Connection {
                     )
                 };
 
-                // Note: sqlite3_error_offset is available in SQLite 3.38+
-                // For compatibility, we use 0 if not available
-                let offset = 0;
-
                 unsafe {
+                    // Use sqlite3_error_offset (available in SQLite 3.38+) to get the error position
+                    let offset = sqlite3_error_offset(temp_connection.sqlite3);
                     (
                         sqlite3_errcode(temp_connection.sqlite3),
                         offset,
@@ -152,11 +150,9 @@ impl Connection {
                     )
                 };
 
-                // Note: sqlite3_error_offset is available in SQLite 3.38+
-                // For compatibility, we use 0 if not available
-                let offset = 0;
-
                 unsafe {
+                    // Use sqlite3_error_offset (available in SQLite 3.38+) to get the error position
+                    let offset = sqlite3_error_offset(self.sqlite3);
                     (
                         sqlite3_errcode(self.sqlite3),
                         offset,

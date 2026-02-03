@@ -1156,3 +1156,103 @@ pub struct VulnData {
     pub references: Vec<String>,
     pub tags: Vec<String>,
 }
+
+// ============================================
+// SANDBOX MODELS
+// ============================================
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum SandboxStatus {
+    Creating,
+    Starting,
+    Running,
+    Stopping,
+    Stopped,
+    Error,
+}
+
+impl SandboxStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SandboxStatus::Creating => "creating",
+            SandboxStatus::Starting => "starting",
+            SandboxStatus::Running => "running",
+            SandboxStatus::Stopping => "stopping",
+            SandboxStatus::Stopped => "stopped",
+            SandboxStatus::Error => "error",
+        }
+    }
+}
+
+impl From<&str> for SandboxStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "creating" => SandboxStatus::Creating,
+            "starting" => SandboxStatus::Starting,
+            "running" => SandboxStatus::Running,
+            "stopping" => SandboxStatus::Stopping,
+            "stopped" => SandboxStatus::Stopped,
+            "error" => SandboxStatus::Error,
+            _ => SandboxStatus::Creating,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum SandboxImageType {
+    KaliLinux,
+    UbuntuTools,
+    Custom,
+}
+
+impl SandboxImageType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SandboxImageType::KaliLinux => "kali_linux",
+            SandboxImageType::UbuntuTools => "ubuntu_tools",
+            SandboxImageType::Custom => "custom",
+        }
+    }
+}
+
+impl From<&str> for SandboxImageType {
+    fn from(s: &str) -> Self {
+        match s {
+            "kali_linux" => SandboxImageType::KaliLinux,
+            "ubuntu_tools" => SandboxImageType::UbuntuTools,
+            "custom" => SandboxImageType::Custom,
+            _ => SandboxImageType::KaliLinux,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum SandboxImageStatus {
+    Available,
+    Downloading,
+    Building,
+    Error,
+}
+
+impl SandboxImageStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SandboxImageStatus::Available => "available",
+            SandboxImageStatus::Downloading => "downloading",
+            SandboxImageStatus::Building => "building",
+            SandboxImageStatus::Error => "error",
+        }
+    }
+}
+
+impl From<&str> for SandboxImageStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "available" => SandboxImageStatus::Available,
+            "downloading" => SandboxImageStatus::Downloading,
+            "building" => SandboxImageStatus::Building,
+            "error" => SandboxImageStatus::Error,
+            _ => SandboxImageStatus::Available,
+        }
+    }
+}

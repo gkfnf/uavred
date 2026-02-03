@@ -2,7 +2,7 @@
 //!
 //! ## Module Structure
 //!
-//! ```
+//! ```text
 //! assets_ui/
 //! ├── config/          # Static configuration (zone metadata, UI labels)
 //! ├── data/            # Data access layer (repository pattern)

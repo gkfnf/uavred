@@ -19,6 +19,9 @@ members = [
     "crates/sqlez",
     "crates/sqlez_macros",
     "crates/db",
+    "crates/ai_provider",
+    "crates/sandbox",
+    "crates/sandbox_ui",
 ]
 
 [workspace.package]

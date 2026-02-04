@@ -1,1 +1,4 @@
 /target
+src/boxlite/
+src/tinyctfer/
+.superset/

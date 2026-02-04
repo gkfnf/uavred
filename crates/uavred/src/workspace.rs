@@ -3,6 +3,7 @@
 use assets_ui::AssetsPanel;
 use dashboard_ui::DashboardPanel;
 use flows_ui::FlowsPanel;
+use images_ui::ImagesPanel;
 use gpui::*;
 use gpui_component::{
     badge::Badge,
@@ -27,6 +28,7 @@ pub struct Workspace {
     // 面板 Entities
     dashboard_panel: Option<Entity<DashboardPanel>>,
     assets_panel: Option<Entity<AssetsPanel>>,
+    images_panel: Option<Entity<ImagesPanel>>,
     vulns_panel: Option<Entity<VulnsPanel>>,
     traffic_panel: Option<Entity<TrafficPanel>>,
     flows_panel: Option<Entity<FlowsPanel>>,
@@ -51,6 +53,7 @@ impl Workspace {
             active_view: AppView::Dashboard,
             dashboard_panel: None,
             assets_panel: None,
+            images_panel: None,
             vulns_panel: None,
             traffic_panel: None,
             flows_panel: None,
@@ -114,6 +117,16 @@ impl Workspace {
         } else {
             let panel = cx.new(|cx| AssetsPanel::new(cx));
             self.assets_panel = Some(panel.clone());
+            panel
+        }
+    }
+
+    fn get_or_create_images_panel(&mut self, cx: &mut Context<Self>) -> Entity<ImagesPanel> {
+        if let Some(ref panel) = self.images_panel {
+            panel.clone()
+        } else {
+            let panel = cx.new(|cx| ImagesPanel::new(cx));
+            self.images_panel = Some(panel.clone());
             panel
         }
     }
@@ -252,10 +265,8 @@ impl Workspace {
                 panel.clone().into_any_element()
             }
             AppView::Images => {
-                // TODO: 实现 Images 面板
-                div()
-                    .child(Label::new("Images - Coming Soon"))
-                    .into_any_element()
+                let panel = self.get_or_create_images_panel(cx);
+                panel.clone().into_any_element()
             }
             AppView::Vulns => {
                 let panel = self.get_or_create_vulns_panel(cx);

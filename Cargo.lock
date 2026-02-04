@@ -8658,6 +8658,7 @@ dependencies = [
  "gpui",
  "gpui-component",
  "gpui-component-assets",
+ "images_ui",
  "scan_ui",
  "settings_ui",
  "tracing",

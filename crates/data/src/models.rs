@@ -734,6 +734,74 @@ pub struct AgentLog {
 }
 
 // ============================================
+// CONTAINER MODELS (for Images UI)
+// ============================================
+
+/// Container execution status for UI display
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum ContainerExecutionStatus {
+    Running,
+    Stopped,
+    Building,
+}
+
+impl ContainerExecutionStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ContainerExecutionStatus::Running => "running",
+            ContainerExecutionStatus::Stopped => "stopped",
+            ContainerExecutionStatus::Building => "building",
+        }
+    }
+}
+
+impl From<&str> for ContainerExecutionStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "running" => ContainerExecutionStatus::Running,
+            "stopped" => ContainerExecutionStatus::Stopped,
+            "building" => ContainerExecutionStatus::Building,
+            _ => ContainerExecutionStatus::Stopped,
+        }
+    }
+}
+
+impl std::fmt::Display for ContainerExecutionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ContainerExecutionStatus::Running => write!(f, "Running"),
+            ContainerExecutionStatus::Stopped => write!(f, "Stopped"),
+            ContainerExecutionStatus::Building => write!(f, "Building"),
+        }
+    }
+}
+
+/// Container status for Images tab UI display
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerStatus {
+    pub container_id: String,
+    pub agent: String,
+    pub task_name: String,
+    pub docker_exec_command: String,
+    pub status: ContainerExecutionStatus,
+    pub running_duration: String,
+    pub cpu_usage_percent: f64,
+    pub memory_usage_mb: u64,
+    pub memory_limit_mb: u64,
+    pub exposed_ports: Vec<String>,
+}
+
+impl ContainerStatus {
+    /// Calculate memory usage percentage
+    pub fn memory_usage_percent(&self) -> f64 {
+        if self.memory_limit_mb == 0 {
+            return 0.0;
+        }
+        (self.memory_usage_mb as f64 / self.memory_limit_mb as f64) * 100.0
+    }
+}
+
+// ============================================
 // 7. DEVICES MODELS
 // ============================================
 

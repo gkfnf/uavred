@@ -2,42 +2,30 @@
 //!
 //! ## Module Structure
 //!
-//! ```text
+//! ```
 //! assets_ui/
 //! ├── config/          # Static configuration (zone metadata, UI labels)
-//! ├── data/            # Data access layer (repository pattern)
 //! ├── components/      # Shared UI components
 //! ├── asset_detail_panel/  # Asset detail view with card-based layout
-//! ├── topology_canvas/     # Interactive network topology canvas
-//! ├── topology/            # New D3.js-based topology via WebView (experimental)
+//! ├── topology/        # D3.js-based topology visualization via WebView
 //! └── events.rs        # Event definitions
 //! ```
 
 use gpui::*;
 use gpui::prelude::FluentBuilder;
-use gpui_component::{h_flex, label::Label, v_flex, IconName, button::Button, Sizable};
+use gpui_component::{h_flex, label::Label, v_flex, IconName, input::{Input, InputState}};
 
 mod asset_detail_panel;
 mod components;
 mod config;
-mod repository;
 mod events;
-mod topology_canvas;
-mod topology_webview;
-mod webview_topology;
-
-// New D3.js-based topology visualization (experimental)
-// This is an alternative implementation using a WebView with D3.js
-pub mod topology;
+mod topology;
 
 pub use asset_detail_panel::AssetDetailPanel;
 pub use components::*;
 pub use config::{theme_ext, ui_labels, zone_config, ZoneTypeExt};
-pub use repository::{AssetRepository, MockAssetRepository};
 pub use events::AssetActionEvent;
-pub use topology_canvas::{AssetSelectedEvent, NodeVirtualPos, TopologyCanvas};
-pub use topology_webview::TopologyWebView;
-pub use webview_topology::{WebViewTopologyCanvas, WebViewTopologyEvent};
+pub use topology::{TopologyCanvas, TopologyEvent};
 
 use data::models::AssetNode;
 use data::{AssetStore, init_and_load_asset_store};
@@ -45,29 +33,24 @@ use ui::theme::*;
 use workspace::AppView;
 use workspace_ui::AppState;
 
-/// Topology view mode
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum TopologyViewMode {
-    /// Native Z1-Z5 zone-based canvas
-    Native,
-    /// WebView-based D3.js force-directed graph
-    WebView,
-}
-
 /// AssetsPanel - Top-level asset management container
 ///
-/// Coordinates:
-/// 1. TopologyCanvas - renders network asset topology (native or webview)
+/// Contains:
+/// 1. TopologyCanvas - D3.js-based network asset topology via WebView
 /// 2. AssetDetailPanel - displays selected asset details
+/// 3. Search functionality for quick asset location
 pub struct AssetsPanel {
     topology_expanded: bool,
     details_expanded: bool,
-    view_mode: TopologyViewMode,
-    topology_canvas: Entity<TopologyCanvas>,
-    webview_topology: Option<Entity<WebViewTopologyCanvas>>,
+    topology_canvas: Option<Entity<TopologyCanvas>>,
     asset_detail_panel: Entity<AssetDetailPanel>,
     selected_asset: Option<AssetNode>,
     _subscriptions: Vec<Subscription>,
+    // Search state
+    search_input: Option<Entity<InputState>>,
+    search_results: Vec<data::models::Asset>,
+    show_search_dropdown: bool,
+    _search_subscription: Option<Subscription>,
 }
 
 impl AssetsPanel {
@@ -75,59 +58,83 @@ impl AssetsPanel {
         // Initialize asset store for database access
         init_and_load_asset_store(cx);
         
-        let topology_canvas = cx.new(TopologyCanvas::new);
         let asset_detail_panel = cx.new(AssetDetailPanel::new);
-
-        // Subscribe to asset selection events from topology canvas
-        let asset_detail_panel_clone = asset_detail_panel.clone();
-        let subscription = cx.subscribe(&topology_canvas, move |this, _topology: Entity<TopologyCanvas>, event, cx| {
-            tracing::info!("AssetsPanel received event: {:?}", event);
-            
-            // Use if let to properly handle the event reference
-            if let AssetSelectedEvent::NodeSelected(node_id) = event {
-                tracing::info!("NodeSelected event with node_id: {}", node_id);
-                
-                // Parse the node ID (it's a string representation of the database ID)
-                if let Ok(asset_id) = node_id.parse::<i64>() {
-                    tracing::info!("Parsed asset_id: {}", asset_id);
-                    
-                    // Load full asset data from database
-                    let asset_store = AssetStore::global(cx);
-                    if let Some(asset_node) = asset_store.read(cx).get_asset_node_by_id(asset_id) {
-                        tracing::info!("Found asset node: {} ({})", asset_node.name, asset_node.ip_address);
-                        
-                        // Update detail panel with full node data
-                        asset_detail_panel_clone.update(cx, |panel, cx| {
-                            panel.set_node(asset_node.clone(), cx);
-                        });
-                        // Update local state
-                        this.selected_asset = Some(asset_node.clone());
-                        this.details_expanded = true;
-                        cx.notify();
-                        tracing::info!("AssetsPanel updated successfully");
-                    } else {
-                        tracing::warn!("Could not find asset with id {} in AssetStore", asset_id);
-                    }
-                } else {
-                    tracing::error!("Failed to parse node_id '{}' as i64", node_id);
-                }
-            }
-        });
 
         Self {
             topology_expanded: true,
             details_expanded: false,
-            view_mode: TopologyViewMode::Native,
-            topology_canvas,
-            webview_topology: None,
+            topology_canvas: None,
             asset_detail_panel,
             selected_asset: None,
-            _subscriptions: vec![subscription],
+            _subscriptions: Vec::new(),
+            search_input: None,
+            search_results: Vec::new(),
+            show_search_dropdown: false,
+            _search_subscription: None,
+        }
+    }
+    
+    /// Initialize the search input lazily
+    fn ensure_search_input(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Entity<InputState> {
+        if self.search_input.is_none() {
+            let search_input = cx.new(|cx| InputState::new(window, cx));
+            
+            // Observe search input changes
+            let subscription = cx.observe(&search_input, |this, _input, cx| {
+                let query = this.search_input.as_ref().map(|i| i.read(cx).value().to_string()).unwrap_or_default();
+                this.on_search_change(query, cx);
+            });
+            
+            self.search_input = Some(search_input);
+            self._search_subscription = Some(subscription);
+        }
+        self.search_input.clone().unwrap()
+    }
+    
+    /// Initialize the topology canvas lazily
+    fn ensure_topology_canvas(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.topology_canvas.is_none() {
+            tracing::info!("Creating topology canvas...");
+            
+            let topology_canvas = cx.new(|cx| TopologyCanvas::new(window, cx));
+            
+            // Subscribe to topology events
+            let asset_detail_panel = self.asset_detail_panel.clone();
+            let subscription = cx.subscribe(&topology_canvas, move |this, _topology, event, cx| {
+                let node_id = match event {
+                    TopologyEvent::NodeSelected(id) => id,
+                };
+                tracing::info!("Node selected: {}", node_id);
+                
+                if let Ok(asset_id) = node_id.parse::<i64>() {
+                    let asset_store = AssetStore::global(cx);
+                    if let Some(asset_node) = asset_store.read(cx).get_asset_node_by_id(asset_id) {
+                        asset_detail_panel.update(cx, |panel, cx| {
+                            panel.set_node(asset_node.clone(), cx);
+                        });
+                        this.selected_asset = Some(asset_node);
+                        this.details_expanded = true;
+                        cx.notify();
+                    }
+                }
+            });
+            
+            self.topology_canvas = Some(topology_canvas);
+            self._subscriptions.push(subscription);
+            tracing::info!("Topology canvas created successfully");
         }
     }
 
     fn toggle_topology(&mut self, cx: &mut Context<Self>) {
         self.topology_expanded = !self.topology_expanded;
+        
+        // Update webview visibility based on collapsed state
+        if let Some(ref canvas) = self.topology_canvas {
+            canvas.update(cx, |canvas, cx| {
+                canvas.set_visible(self.topology_expanded, cx);
+            });
+        }
+        
         cx.notify();
     }
 
@@ -135,35 +142,67 @@ impl AssetsPanel {
         self.details_expanded = !self.details_expanded;
         cx.notify();
     }
-
-    /// Toggle between native and webview topology views
-    fn toggle_view_mode(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
-        tracing::info!("Toggling view mode from {:?}", self.view_mode);
-        
-        self.view_mode = match self.view_mode {
-            TopologyViewMode::Native => TopologyViewMode::WebView,
-            TopologyViewMode::WebView => TopologyViewMode::Native,
-        };
-        
-        tracing::info!("View mode switched to {:?}", self.view_mode);
+    
+    /// Handle search input change
+    fn on_search_change(&mut self, query: String, cx: &mut Context<Self>) {
+        if query.is_empty() {
+            self.search_results.clear();
+            self.show_search_dropdown = false;
+        } else {
+            // Search assets by name or IP
+            let asset_store = AssetStore::global(cx);
+            let all_assets = asset_store.read(cx).get_all_assets();
+            let query_lower = query.to_lowercase();
+            
+            self.search_results = all_assets
+                .into_iter()
+                .filter(|asset| {
+                    let name_match = asset.name.to_lowercase().contains(&query_lower);
+                    let ip_match = asset.ip_address
+                        .as_ref()
+                        .map(|ip| ip.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false);
+                    name_match || ip_match
+                })
+                .take(10) // Limit to 10 results
+                .collect();
+            
+            self.show_search_dropdown = !self.search_results.is_empty();
+        }
         cx.notify();
     }
-
+    
+    /// Handle search result selection
+    fn on_search_select(&mut self, asset: data::models::Asset, cx: &mut Context<Self>) {
+        // Clear search state
+        self.search_results.clear();
+        self.show_search_dropdown = false;
+        
+        // Focus node in topology
+        if let Some(ref canvas) = self.topology_canvas {
+            canvas.update(cx, |canvas, cx| {
+                canvas.focus_node(asset.id.to_string(), cx);
+            });
+        }
+        
+        // Note: We don't auto-expand the detail panel anymore
+        // User can click on the focused node to see details
+        cx.notify();
+    }
+    
     /// Set WebView visibility - called by Workspace when switching tabs
-    pub fn set_webview_visible(&self, visible: bool, cx: &mut Context<Self>) {
-        if let Some(ref webview_topo) = self.webview_topology {
-            webview_topo.update(cx, |webview, cx| {
-                webview.set_visible(visible, cx);
+    /// This is in addition to the automatic visibility sync in render()
+    pub fn set_webview_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        // Update topology canvas visibility if it exists
+        if let Some(ref canvas) = self.topology_canvas {
+            canvas.update(cx, |canvas, _cx| {
+                canvas.set_visible(visible && self.topology_expanded, _cx);
             });
         }
     }
 
     /// Render topology panel header
-    fn render_topology_header(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let repository = MockAssetRepository::new();
-        let asset_count = repository.get_asset_count();
-        let connection_count = repository.get_connection_count();
-        let view_mode = self.view_mode;
+    fn render_topology_header(&mut self, window: &mut Window, cx: &mut Context<Self>, asset_count: usize, connection_count: usize) -> impl IntoElement {
         let is_expanded = self.topology_expanded;
 
         h_flex()
@@ -172,12 +211,16 @@ impl AssetsPanel {
             .items_center()
             .bg(rgb(BG_PRIMARY))
             .child(
-                // Expand/collapse button - separate from header click
+                // Expand/collapse button
                 div()
                     .cursor_pointer()
                     .on_mouse_down(
                         MouseButton::Left,
-                        cx.listener(|this, _, _, cx| this.toggle_topology(cx)),
+                        cx.listener(|this, _, window, cx| {
+                            // Ensure canvas is created before toggling
+                            this.ensure_topology_canvas(window, cx);
+                            this.toggle_topology(cx);
+                        }),
                     )
                     .child(if is_expanded {
                         IconName::ChevronDown
@@ -191,22 +234,10 @@ impl AssetsPanel {
                     .text_sm()
                     .font_weight(FontWeight::SEMIBOLD),
             )
+            // Search box - moved to left side with more space
+            .child(div().w(px(16.0)))
+            .child(self.render_search_box(window, cx))
             .child(div().flex_1())
-            // View mode toggle button - always visible when expanded
-            .child(
-                Button::new("toggle-view-mode")
-                    .label(if view_mode == TopologyViewMode::Native {
-                        "🌐 切换到 D3.js 拓扑"
-                    } else {
-                        "📊 切换到 Z1-Z5 分区"
-                    })
-                    .small()
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        tracing::info!("Toggle view mode button clicked");
-                        this.toggle_view_mode(window, cx);
-                    }))
-            )
-            .child(div().w(px(12.0)))
             .child(self.render_severity_legend())
             .child(
                 h_flex()
@@ -225,6 +256,20 @@ impl AssetsPanel {
                             .text_color(rgb(TEXT_SECONDARY)),
                     ),
             )
+    }
+    
+    /// Get total asset count from store
+    fn get_asset_count(&self, cx: &mut App) -> usize {
+        let asset_store = AssetStore::global(cx);
+        asset_store.read(cx).get_all_assets().len()
+    }
+    
+    /// Get estimated connection count (for display purposes)
+    fn get_connection_count(&self, cx: &mut App) -> usize {
+        // In a real implementation, this might come from a cache or pre-computed value
+        // For now, return a reasonable estimate based on asset count
+        let count = self.get_asset_count(cx);
+        count.saturating_mul(2).min(500)
     }
 
     /// Render severity level legend
@@ -256,6 +301,81 @@ impl AssetsPanel {
                     .text_xs()
                     .text_color(rgb(TEXT_SECONDARY)),
             )
+    }
+
+    /// Render search box with horizontal results list
+    fn render_search_box(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Get or create search input (ensures observe subscription is set up)
+        let search_input = self.ensure_search_input(window, cx);
+        let search_results = self.search_results.clone();
+        let show_results = self.show_search_dropdown;
+        
+        // Horizontal layout: [Search Input] [Result 1] [Result 2] ...
+        h_flex()
+            .items_center()
+            .gap_2()
+            // Search input box (compact)
+            .child(
+                h_flex()
+                    .w(px(200.0))
+                    .items_center()
+                    .gap_2()
+                    .px_3()
+                    .py_2()
+                    .bg(rgb(BG_SECONDARY))
+                    .rounded_md()
+                    .border_1()
+                    .border_color(rgb(BORDER_COLOR))
+                    .child(IconName::Search)
+                    .child(
+                        div()
+                            .flex_1()
+                            .child(Input::new(&search_input))
+                    )
+            )
+            // Horizontal search results - show up to 3 matches
+            .when(show_results, |this| {
+                this.children(search_results.into_iter().take(3).map(|asset| {
+                    let asset_clone = asset.clone();
+                    let name = if asset.name.len() > 12 {
+                        format!("{}...", &asset.name[..12])
+                    } else {
+                        asset.name.clone()
+                    };
+                    let ip = asset.ip_address.clone().unwrap_or_else(|| "N/A".to_string());
+                    
+                    div()
+                        .px_2()
+                        .py_1()
+                        .bg(rgb(BG_CARD))
+                        .rounded_md()
+                        .border_1()
+                        .border_color(rgb(BORDER_COLOR))
+                        .cursor_pointer()
+                        .hover(|style| style.bg(rgb(BG_CARD_HOVER)))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _, _window, cx| {
+                                this.on_search_select(asset_clone.clone(), cx);
+                            })
+                        )
+                        .child(
+                            v_flex()
+                                .gap_0()
+                                .child(
+                                    Label::new(name)
+                                        .text_xs()
+                                        .text_color(rgb(TEXT_PRIMARY))
+                                )
+                                .child(
+                                    Label::new(ip)
+                                        .text_xs()
+                                        .text_color(rgb(TEXT_SECONDARY))
+                                )
+                        )
+                        .into_any_element()
+                }).collect::<Vec<_>>())
+            })
     }
 
     /// Render detail panel header
@@ -307,72 +427,30 @@ impl AssetsPanel {
 
 impl Render for AssetsPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Check if we should show the webview based on active view
+        // Check if assets view is active
         let is_assets_active = cx.try_global::<AppState>()
             .map(|state| state.get_active_view() == AppView::Assets)
-            .unwrap_or(true); // Default to visible if no global state
+            .unwrap_or(true);
         
-        // Initialize webview topology if needed and in webview mode
-        if self.view_mode == TopologyViewMode::WebView && self.webview_topology.is_none() {
-            tracing::info!("Creating WebView topology in render...");
-            let webview_topo = cx.new(|cx| WebViewTopologyCanvas::new(window, cx));
-            
-            // Subscribe to webview topology events
-            let asset_detail_panel_clone = self.asset_detail_panel.clone();
-            let subscription = cx.subscribe(&webview_topo, move |this, _webview, event, cx| {
-                if let WebViewTopologyEvent::NodeSelected(node_id) = event {
-                    tracing::info!("WebView topology node selected: {}", node_id);
-                    if let Ok(asset_id) = node_id.parse::<i64>() {
-                        let asset_store = AssetStore::global(cx);
-                        if let Some(asset_node) = asset_store.read(cx).get_asset_node_by_id(asset_id) {
-                            asset_detail_panel_clone.update(cx, |panel, cx| {
-                                panel.set_node(asset_node.clone(), cx);
-                            });
-                            this.selected_asset = Some(asset_node.clone());
-                            this.details_expanded = true;
-                            cx.notify();
-                        }
-                    }
+        // Initialize topology canvas on first render if expanded
+        if self.topology_expanded {
+            self.ensure_topology_canvas(window, cx);
+        }
+        
+        // Sync topology canvas visibility with active view and expanded state
+        if let Some(ref canvas) = self.topology_canvas {
+            let should_be_visible = is_assets_active && self.topology_expanded;
+            canvas.update(cx, |canvas, cx| {
+                if canvas.is_visible() != should_be_visible {
+                    canvas.set_visible(should_be_visible, cx);
                 }
             });
-            
-            // Set initial visibility based on active view
-            webview_topo.update(cx, |webview, cx| {
-                webview.set_visible(is_assets_active, cx);
-            });
-            
-            self.webview_topology = Some(webview_topo);
-            self._subscriptions.push(subscription);
-            tracing::info!("WebView topology created successfully");
         }
         
-        // Ensure WebView visibility is in sync with active view
-        if let Some(ref webview_topo) = self.webview_topology {
-            webview_topo.update(cx, |webview, cx| {
-                webview.set_visible(is_assets_active, cx);
-            });
-        }
+        // Calculate asset counts for display
+        let asset_count = self.get_asset_count(cx);
+        let connection_count = self.get_connection_count(cx);
 
-        let topology_content: gpui::AnyElement = if !self.topology_expanded {
-            div().into_any_element()
-        } else {
-            match self.view_mode {
-                TopologyViewMode::Native => self.topology_canvas.clone().into_any_element(),
-                TopologyViewMode::WebView => {
-                    if let Some(ref webview_topo) = self.webview_topology {
-                        webview_topo.clone().into_any_element()
-                    } else {
-                        div()
-                            .size_full()
-                            .items_center()
-                            .justify_center()
-                            .child(Label::new("正在初始化 WebView..."))
-                            .into_any_element()
-                    }
-                }
-            }
-        };
-        
         v_flex()
             .size_full()
             .gap_0()
@@ -386,8 +464,23 @@ impl Render for AssetsPanel {
                     .bg(rgb(BG_CARD))
                     .border_b_1()
                     .border_color(rgb(BORDER_COLOR))
-                    .child(self.render_topology_header(window, cx))
-                    .child(topology_content),
+                    // Header with search box (includes dropdown)
+                    .child(self.render_topology_header(window, cx, asset_count, connection_count))
+                    // WebView topology canvas
+                    .child(if self.topology_expanded {
+                        if let Some(ref canvas) = self.topology_canvas {
+                            canvas.clone().into_any_element()
+                        } else {
+                            div()
+                                .size_full()
+                                .items_center()
+                                .justify_center()
+                                .child(Label::new("正在初始化拓扑..."))
+                                .into_any_element()
+                        }
+                    } else {
+                        div().into_any_element()
+                    }),
             )
             // Asset detail panel
             .child(
@@ -400,4 +493,9 @@ impl Render for AssetsPanel {
                     .child(self.render_detail_content()),
             )
     }
+}
+
+/// Helper function to create the assets panel
+pub fn create_assets_panel(cx: &mut App) -> Entity<AssetsPanel> {
+    cx.new(|cx| AssetsPanel::new(cx))
 }

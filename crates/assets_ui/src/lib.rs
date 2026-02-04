@@ -314,18 +314,18 @@ impl AssetsPanel {
         h_flex()
             .items_center()
             .gap_2()
-            // Search input box (compact)
+            // Search input box (compact) - natural style with subtle background
             .child(
                 h_flex()
-                    .w(px(200.0))
+                    .w(px(220.0))
                     .items_center()
                     .gap_2()
                     .px_3()
-                    .py_2()
-                    .bg(rgb(BG_SECONDARY))
+                    .py_1()
+                    .bg(rgb(BG_CARD))
                     .rounded_md()
                     .border_1()
-                    .border_color(rgb(BORDER_COLOR))
+                    .border_color(rgb(0xe2e8f0))
                     .child(IconName::Search)
                     .child(
                         div()

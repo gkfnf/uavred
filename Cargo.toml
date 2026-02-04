@@ -16,14 +16,21 @@ members = [
     "crates/scan_ui",
     "crates/traffic_ui",
     "crates/flows_ui",
+    "crates/images_ui",
     "crates/sqlez",
     "crates/sqlez_macros",
     "crates/db",
+    # Boxlite sandbox runtime
+    "src/boxlite/boxlite",
+    "src/boxlite/boxlite-shared",
+    "src/boxlite/guest",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
+authors = ["UAVRed Team"]
+license = "MIT"
 
 [workspace.lints]
 rust = { unsafe_code = "forbid" }
@@ -50,7 +57,7 @@ lsp-types = { version = "0.97.0", features = ["proposed"] }
 tokio = { version = "1.35", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
 tracing-subscriber = "0.3"
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 log = "0.4"
 parking_lot = "0.12"

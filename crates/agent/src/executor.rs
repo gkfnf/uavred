@@ -1,5 +1,5 @@
 use anyhow::Result;
-use core::task::Task;
+use core_crate::task::Task;
 use tokio::sync::mpsc;
 
 pub struct TaskExecutor {

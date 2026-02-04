@@ -734,6 +734,114 @@ pub struct AgentLog {
 }
 
 // ============================================
+// 6b. CONTAINER STATUS MODELS (for Images UI)
+// ============================================
+
+/// Container execution status for UI display
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum ContainerExecutionStatus {
+    Running,
+    Stopped,
+    Building,
+}
+
+impl ContainerExecutionStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ContainerExecutionStatus::Running => "running",
+            ContainerExecutionStatus::Stopped => "stopped",
+            ContainerExecutionStatus::Building => "building",
+        }
+    }
+}
+
+impl From<&str> for ContainerExecutionStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "running" => ContainerExecutionStatus::Running,
+            "stopped" => ContainerExecutionStatus::Stopped,
+            "building" => ContainerExecutionStatus::Building,
+            _ => ContainerExecutionStatus::Stopped,
+        }
+    }
+}
+
+impl std::fmt::Display for ContainerExecutionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ContainerExecutionStatus::Running => write!(f, "Running"),
+            ContainerExecutionStatus::Stopped => write!(f, "Stopped"),
+            ContainerExecutionStatus::Building => write!(f, "Building"),
+        }
+    }
+}
+
+/// Container status for Images tab UI display
+/// Maps to Agent model but optimized for UI presentation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerStatus {
+    pub container_id: String,
+    pub agent: String,
+    pub task_name: String,
+    pub docker_exec_command: String,
+    pub status: ContainerExecutionStatus,
+    pub running_duration: String,
+    pub cpu_usage_percent: f64,
+    pub memory_usage_mb: u64,
+    pub memory_limit_mb: u64,
+    pub exposed_ports: Vec<String>,
+}
+
+impl ContainerStatus {
+    /// Calculate memory usage percentage
+    pub fn memory_usage_percent(&self) -> f64 {
+        if self.memory_limit_mb == 0 {
+            return 0.0;
+        }
+        (self.memory_usage_mb as f64 / self.memory_limit_mb as f64) * 100.0
+    }
+
+    /// Create from Agent model
+    pub fn from_agent(agent: &Agent, image_name: Option<&str>) -> Self {
+        let duration = format_duration(agent.running_duration_seconds);
+        let exec_cmd = if agent.docker_exec_command.is_empty() {
+            format!("img-{}", agent.id)
+        } else {
+            agent.docker_exec_command.clone()
+        };
+
+        Self {
+            container_id: agent.container_id.clone(),
+            agent: agent.name.clone(),
+            task_name: agent.current_task_name.clone(),
+            docker_exec_command: exec_cmd,
+            status: match agent.status {
+                AgentStatus::Running => ContainerExecutionStatus::Running,
+                AgentStatus::Stopped => ContainerExecutionStatus::Stopped,
+                AgentStatus::Building => ContainerExecutionStatus::Building,
+                AgentStatus::Error => ContainerExecutionStatus::Stopped,
+            },
+            running_duration: duration,
+            cpu_usage_percent: agent.cpu_percent,
+            memory_usage_mb: agent.memory_mb as u64,
+            memory_limit_mb: 2048, // Default 2GB limit
+            exposed_ports: agent.exposed_ports.iter().map(|p| p.to_string()).collect(),
+        }
+    }
+}
+
+/// Format seconds into human-readable duration
+fn format_duration(seconds: i64) -> String {
+    if seconds < 60 {
+        format!("{}s", seconds)
+    } else if seconds < 3600 {
+        format!("{}m {}s", seconds / 60, seconds % 60)
+    } else {
+        format!("{}h {}m", seconds / 3600, (seconds % 3600) / 60)
+    }
+}
+
+// ============================================
 // 7. DEVICES MODELS
 // ============================================
 

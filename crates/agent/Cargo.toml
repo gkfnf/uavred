@@ -4,9 +4,45 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-core = { path = "../core" }
+core_crate = { path = "../core", package = "core" }
+
+# Async runtime
 tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["codec"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+# Error handling
 anyhow = { workspace = true }
-tracing = { workspace = true }
-uuid = { workspace = true }
+async-trait = "0.1"
+
+# Serialization
 serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Unique identifiers
+uuid = { workspace = true }
+
+# Logging/tracing
+tracing = { workspace = true }
+
+# Futures
+futures = { workspace = true }
+
+# File system operations
+tempfile = "3"
+libc = "0.2"
+tar = "0.4"
+
+# gRPC (for Boxlite integration, if needed)
+tonic = { version = "0.12", optional = true }
+
+# Docker client (optional)
+bollard = { version = "0.18", optional = true }
+
+[features]
+default = ["docker-backend"]
+docker-backend = ["bollard"]
+full = ["docker-backend"]
+
+[dev-dependencies]
+tokio-test = "0.4"

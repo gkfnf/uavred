@@ -22,6 +22,7 @@ members = [
     "crates/ai_provider",
     "crates/sandbox",
     "crates/sandbox_ui",
+    "crates/images_ui",
 ]
 
 [workspace.package]

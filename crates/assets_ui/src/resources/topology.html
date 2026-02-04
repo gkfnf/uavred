@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAVRed Network Topology</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* {{CSS_CONTENT}} */
+    </style>
+</head>
+<body>
+    <div id="graph"></div>
+    <div class="tooltip" id="tooltip"></div>
+    
+    <!-- Legend -->
+    <div class="legend">
+        <div style="font-weight: 600; margin-bottom: 6px;">风险等级</div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #ef4444;"></div>
+            <span>高危 (风险≥70或有漏洞)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #f59e0b;"></div>
+            <span>中危 (风险≥40)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #3b82f6;"></div>
+            <span>低危 (风险≥20)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #10b981;"></div>
+            <span>安全 (风险<20)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot vulnerable"></div>
+            <span>存在漏洞</span>
+        </div>
+        <div id="asset-count" style="margin-top: 8px; font-size: 10px; color: #6b7280;">
+            共 {{TOTAL_ASSETS}} 个资产
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn" onclick="resetZoom()" title="重置视图">⟲</button>
+        <button class="control-btn" onclick="zoomIn()" title="放大">+</button>
+        <button class="control-btn" onclick="zoomOut()" title="缩小">−</button>
+    </div>
+
+    <script>
+        // Data injected from Rust
+        const nodes = {{NODES_DATA}};
+        const links = {{LINKS_DATA}};
+        const zones = {{ZONES_DATA}};
+        const nodeScaleFactor = {{NODE_SCALE_FACTOR}};
+        const totalAssets = {{TOTAL_ASSETS}};
+        
+        // {{JS_CONTENT}}
+    </script>
+</body>
+</html>

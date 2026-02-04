@@ -9,6 +9,7 @@
 //! ├── components/      # Shared UI components
 //! ├── asset_detail_panel/  # Asset detail view with card-based layout
 //! ├── topology_canvas/     # Interactive network topology canvas
+//! ├── topology/            # New D3.js-based topology via WebView (experimental)
 //! └── events.rs        # Event definitions
 //! ```
 
@@ -24,6 +25,10 @@ mod events;
 mod topology_canvas;
 mod topology_webview;
 mod webview_topology;
+
+// New D3.js-based topology visualization (experimental)
+// This is an alternative implementation using a WebView with D3.js
+pub mod topology;
 
 pub use asset_detail_panel::AssetDetailPanel;
 pub use components::*;

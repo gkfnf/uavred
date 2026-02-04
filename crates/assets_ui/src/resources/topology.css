@@ -1,0 +1,197 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    overflow: hidden;
+    color: #1f2937;
+    background: #f9fafb;
+}
+
+#graph {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* Zone backgrounds */
+.zone-bg {
+    stroke: rgba(0,0,0,0.08);
+    stroke-width: 1px;
+}
+
+.zone-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.zone-sublabel {
+    font-size: 11px;
+    fill: #6b7280;
+}
+
+.zone-count {
+    font-size: 10px;
+    fill: #9ca3af;
+}
+
+/* Node styles */
+.node {
+    cursor: pointer;
+    stroke: #fff;
+    stroke-width: 1.5px;
+    transition: all 0.2s ease;
+}
+
+.node:hover {
+    stroke: #1f2937;
+    stroke-width: 2px;
+    filter: brightness(1.1);
+}
+
+.node.selected {
+    stroke: #1f2937;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
+}
+
+.node.vulnerable {
+    stroke-dasharray: 3,2;
+}
+
+/* Link styles - lighter and thinner */
+.link {
+    stroke: #d1d5db;
+    stroke-width: 0.8px;
+    stroke-opacity: 0.5;
+    transition: all 0.2s;
+}
+
+.link.cross-zone {
+    stroke: #9ca3af;
+    stroke-dasharray: 3,3;
+    stroke-opacity: 0.4;
+}
+
+.link:hover {
+    stroke-width: 1.5px;
+    stroke: #6b7280;
+    stroke-opacity: 0.8;
+}
+
+/* Label styles - only show on hover or for important nodes */
+.label {
+    font-size: 9px;
+    fill: #4b5563;
+    font-weight: 400;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.9);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.label.visible {
+    opacity: 1;
+}
+
+.label-bg {
+    fill: rgba(255,255,255,0.85);
+    rx: 3;
+    pointer-events: none;
+}
+
+/* Tooltip */
+.tooltip {
+    position: absolute;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.9);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #fff;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000;
+    max-width: 250px;
+}
+
+.tooltip.show {
+    opacity: 1;
+}
+
+.tooltip strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #60a5fa;
+}
+
+.tooltip .risk-high { color: #ef4444; }
+.tooltip .risk-medium { color: #f59e0b; }
+.tooltip .risk-low { color: #10b981; }
+
+/* Controls */
+.controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    gap: 6px;
+    background: rgba(255,255,255,0.95);
+    padding: 6px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.control-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.control-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+/* Legend - positioned in Z5 area (right side) */
+.legend {
+    position: absolute;
+    top: 60px;
+    right: 16px;
+    background: rgba(255,255,255,0.95);
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    font-size: 11px;
+    max-width: 180px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.vulnerable {
+    border: 1px dashed #666;
+    background: transparent;
+}

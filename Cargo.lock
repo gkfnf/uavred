@@ -6769,6 +6769,7 @@ name = "settings_ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "data",
  "dirs 5.0.1",
  "gpui",

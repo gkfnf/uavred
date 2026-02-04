@@ -6,7 +6,7 @@
 //! - OpenAI
 //! - ChatGLM
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// Model information from API
 #[derive(Debug, Clone, Deserialize)]

@@ -1,5 +1,7 @@
 //! Settings UI - Application settings panel
 
+#![recursion_limit = "256"]
+
 use gpui::*;
 use gpui_component::{
     h_flex, v_flex,
@@ -8,6 +10,7 @@ use gpui_component::{
     IconName, Icon,
 };
 
+pub mod components;
 pub mod config;
 pub mod provider;
 pub mod ai_client;

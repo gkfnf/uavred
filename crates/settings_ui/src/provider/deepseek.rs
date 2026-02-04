@@ -1,4 +1,4 @@
-//! Kimi (Moonshot) Provider Implementation
+//! DeepSeek Provider Implementation
 //!
 //! Uses the unified AiProviderClient for all API calls.
 
@@ -7,19 +7,19 @@ use gpui::*;
 use super::ai_client::{AiProvider, ApiModel, ProviderApiConfig, AiProviderClient, ModelInfo, ProviderCapabilities};
 use crate::config::{AiProviderConfig, Settings};
 
-pub struct KimiProvider {
+pub struct DeepSeekProvider {
     config: AiProviderConfig,
     api_key: Option<String>,
 }
 
-impl KimiProvider {
+impl DeepSeekProvider {
     pub fn new() -> Self {
         let config = Settings::load()
             .ok()
-            .and_then(|s| s.ai.providers.get("kimi").cloned())
-            .unwrap_or_else(default_kimi_config);
+            .and_then(|s| s.ai.providers.get("deepseek").cloned())
+            .unwrap_or_else(default_deepseek_config);
         
-        let api_key = std::env::var("MOONSHOT_API_KEY")
+        let api_key = std::env::var("DEEPSEEK_API_KEY")
             .ok()
             .or_else(|| config.api_key.clone());
         
@@ -32,7 +32,7 @@ impl KimiProvider {
             id: model.id.clone(),
             name: model.name.clone().unwrap_or_else(|| model.id.clone()),
             description: model.description.clone().unwrap_or_default(),
-            max_tokens: model.context_length.unwrap_or(128000),
+            max_tokens: model.context_length.unwrap_or(64000),
             capabilities: ProviderCapabilities {
                 supports_chat: true,
                 supports_vision: false,
@@ -42,32 +42,20 @@ impl KimiProvider {
         }
     }
     
-    /// Get default models for Kimi
+    /// Get default models for DeepSeek
     pub fn default_models() -> Vec<ApiModel> {
         vec![
             ApiModel {
-                id: "kimi-k2.5".to_string(),
-                name: Some("Kimi K2.5".to_string()),
-                description: Some("Latest Kimi model with superior performance".to_string()),
-                context_length: Some(256000),
+                id: "deepseek-chat".to_string(),
+                name: Some("DeepSeek Chat".to_string()),
+                description: Some("General purpose chat model".to_string()),
+                context_length: Some(64000),
             },
             ApiModel {
-                id: "moonshot-v1-128k".to_string(),
-                name: Some("Moonshot v1 128K".to_string()),
-                description: Some("Long context model with 128K token limit".to_string()),
-                context_length: Some(128000),
-            },
-            ApiModel {
-                id: "moonshot-v1-32k".to_string(),
-                name: Some("Moonshot v1 32K".to_string()),
-                description: Some("Standard model with 32K token limit".to_string()),
-                context_length: Some(32000),
-            },
-            ApiModel {
-                id: "moonshot-v1-8k".to_string(),
-                name: Some("Moonshot v1 8K".to_string()),
-                description: Some("Fast and economical model with 8K token limit".to_string()),
-                context_length: Some(8000),
+                id: "deepseek-reasoner".to_string(),
+                name: Some("DeepSeek Reasoner".to_string()),
+                description: Some("Reasoning model with step-by-step thinking".to_string()),
+                context_length: Some(64000),
             },
         ]
     }
@@ -76,12 +64,12 @@ impl KimiProvider {
     fn save_api_key(&mut self, key: String) -> anyhow::Result<()> {
         let mut settings = Settings::load()?;
         
-        if let Some(config) = settings.ai.providers.get_mut("kimi") {
+        if let Some(config) = settings.ai.providers.get_mut("deepseek") {
             config.api_key = Some(key.clone());
         } else {
-            let mut config = default_kimi_config();
+            let mut config = default_deepseek_config();
             config.api_key = Some(key.clone());
-            settings.ai.providers.insert("kimi".to_string(), config);
+            settings.ai.providers.insert("deepseek".to_string(), config);
         }
         
         settings.save()?;
@@ -90,17 +78,17 @@ impl KimiProvider {
     }
 }
 
-impl AiProvider for KimiProvider {
+impl AiProvider for DeepSeekProvider {
     fn provider_id(&self) -> &str {
-        "kimi"
+        "deepseek"
     }
     
     fn provider_name(&self) -> &str {
-        "Kimi (Moonshot)"
+        "DeepSeek"
     }
     
     fn default_base_url(&self) -> &str {
-        "https://api.moonshot.cn"
+        "https://api.deepseek.com"
     }
     
     fn get_config(&self) -> ProviderApiConfig {
@@ -163,13 +151,13 @@ impl AiProvider for KimiProvider {
     }
 }
 
-fn default_kimi_config() -> AiProviderConfig {
+fn default_deepseek_config() -> AiProviderConfig {
     AiProviderConfig {
         enabled: false,
-        endpoint: "https://api.moonshot.cn".to_string(),
+        endpoint: "https://api.deepseek.com".to_string(),
         api_key: None,
         models: vec![],
-        region: Some("china".to_string()),
+        region: Some("international".to_string()),
         alt_endpoints: vec![],
         claude_code: None,
     }

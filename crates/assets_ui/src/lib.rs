@@ -314,18 +314,17 @@ impl AssetsPanel {
         h_flex()
             .items_center()
             .gap_2()
-            // Search input box (compact) - natural style with subtle background
+            // Search input box - natural glassmorphism style
             .child(
                 h_flex()
-                    .w(px(220.0))
+                    .w(px(240.0))
                     .items_center()
                     .gap_2()
                     .px_3()
                     .py_1()
-                    .bg(rgb(BG_CARD))
+                    .bg(rgb(0xf8fafc))  // Very subtle gray, close to background
                     .rounded_md()
-                    .border_1()
-                    .border_color(rgb(0xe2e8f0))
+                    .shadow_sm()  // Soft shadow instead of border
                     .child(IconName::Search)
                     .child(
                         div()

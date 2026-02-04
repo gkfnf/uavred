@@ -1,0 +1,226 @@
+{
+  "meta": {
+    "project": "UAV Red Team Security Testing Platform",
+    "date": "2026-02-04",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "UAV Red Team is a comprehensive security testing intention orchestration platform designed for UAV red team experts to intuitively organize, monitor in real-time, and fully control security testing processes across UAV ecosystems and web environments, leveraging AI agents and sandbox isolation.",
+  "core_goals": [
+    "Provide intuitive and high-density Kanban style task orchestration for red team security testing intents.",
+    "Enable real-time observation of testing agents via VNC, network traffic sniffing, and sandbox monitoring.",
+    "Ensure complete control over multi-dimensional security testing across UAV firmware, protocols, and ecosystems.",
+    "Support parallel multi-agent development with clear architecture and task decomposition."
+  ],
+  "key_features": [
+    "Mission control dashboard with drag-and-drop Kanban board for task management.",
+    "Asset management interface featuring UAV/red team assets with topology visualization and risk scoring.",
+    "Vulnerability management system tracking CVEs with AI-assisted analysis and PoC generation.",
+    "Network scanning capabilities analyzing UAV firmware and network protocols.",
+    "Network traffic monitoring with TrafficQL filtering, live capture, and anomaly detection.",
+    "Isolated sandbox environment supporting VNC access and operation recording for secure testing.",
+    "AI integration for automated agent task execution, result analysis, and scheduling.",
+    "Configurable settings panel and workspace with panes and sidebar for flexible UI layout.",
+    "Container monitoring UI with real-time resource usage and status visualization."
+  ],
+  "user_flow_summary": [
+    "User logs in and selects a mission in the Mission Control dashboard.",
+    "User creates and organizes security testing tasks using a Kanban board, assigning priorities and tags.",
+    "User monitors ongoing tasks in real-time with embedded VNC views and network traffic analysis.",
+    "User reviews vulnerability findings with filtering, detailed CVE information, AI confidence scores, and PoC code.",
+    "User manages UAV assets with network topology visualization, risk scores, and device details.",
+    "User conducts network scans and analyzes captured traffic using TrafficQL queries and detailed request-response views.",
+    "User manages device lists and device details, including firmware, wireless parameters, and task statuses.",
+    "User views containerized AI agents and their runtime status, resource utilization, and logs.",
+    "User configures system settings through a categorized sidebar and detailed settings panel.",
+    "User transitions between all views seamlessly via a unified top navigation bar with real-time status indicators."
+  ],
+  "validation_criteria": [
+    "All UI components conform visually and interaction-wise with provided high-fidelity Figma designs.",
+    "Codebase compiles successfully with zero usage of unwraps, leveraging proper error handling.",
+    "All major views support responsive layouts, theming with light color schemes, and consistent UI elements (buttons, badges, tabs, cards).",
+    "Tasks across Kanban, asset management, vulnerability management, traffic monitoring, devices, and container monitoring operate correctly and reflect real-time data updates.",
+    "AI agent integrations correctly schedule, execute, and report results through the platform interfaces.",
+    "Sandbox environment securely isolates operations with VNC streaming and operational logging.",
+    "Performance metrics for task scheduling, traffic analysis, and scanning meet predefined benchmarks.",
+    "Security and multi-tenant isolation policies are implemented and verified via penetration testing.",
+    "Complete and clear documentation of architecture, UI/UX design, task breakdown, risk mitigation, and agent development guides are available.",
+    "Parallel development by multiple agents progresses without integration conflicts supported by clear task dependencies and code quality standards."
+  ],
+  "code_summary": {
+    "tech_stack": {
+      "language": "Rust",
+      "edition": "2024/2021",
+      "ui_framework": "GPUI (from Zed editor)",
+      "database": "SQLite (via sqlez)",
+      "async_runtime": "Tokio",
+      "serialization": [
+        "serde",
+        "serde_json"
+      ],
+      "http_client": "reqwest",
+      "logging": "tracing",
+      "unique_ids": "uuid"
+    },
+    "project_structure": {
+      "type": "workspace",
+      "crates": [
+        {
+          "name": "uavred",
+          "type": "binary",
+          "description": "Main application entry point"
+        },
+        {
+          "name": "dashboard_ui",
+          "type": "library",
+          "description": "Mission control dashboard with task management"
+        },
+        {
+          "name": "assets_ui",
+          "type": "library",
+          "description": "Asset management UI with webview support"
+        },
+        {
+          "name": "kanban_ui",
+          "type": "library",
+          "description": "Kanban board for task visualization"
+        },
+        {
+          "name": "vulns_ui",
+          "type": "library",
+          "description": "Vulnerability management interface"
+        },
+        {
+          "name": "scan_ui",
+          "type": "library",
+          "description": "Scanning interface UI"
+        },
+        {
+          "name": "traffic_ui",
+          "type": "library",
+          "description": "Network traffic monitoring UI"
+        },
+        {
+          "name": "flows_ui",
+          "type": "library",
+          "description": "Flow management UI"
+        },
+        {
+          "name": "images_ui",
+          "type": "library",
+          "description": "Image management with sandbox integration"
+        },
+        {
+          "name": "settings_ui",
+          "type": "library",
+          "description": "Application settings UI"
+        },
+        {
+          "name": "workspace_ui",
+          "type": "library",
+          "description": "Workspace management with panes and sidebar"
+        },
+        {
+          "name": "monitor_ui",
+          "type": "library",
+          "description": "Container monitoring UI"
+        },
+        {
+          "name": "sandbox_ui",
+          "type": "library",
+          "description": "Sandbox environment UI"
+        },
+        {
+          "name": "agent",
+          "type": "library",
+          "description": "AI agent execution and scheduling"
+        },
+        {
+          "name": "ai_provider",
+          "type": "library",
+          "description": "AI service provider abstraction"
+        },
+        {
+          "name": "data",
+          "type": "library",
+          "description": "Data models, stores, and database access"
+        },
+        {
+          "name": "db",
+          "type": "library",
+          "description": "Database layer and key-value storage"
+        },
+        {
+          "name": "sqlez",
+          "type": "library",
+          "description": "SQLite wrapper with async support"
+        },
+        {
+          "name": "sqlez_macros",
+          "type": "proc-macro",
+          "description": "Procedural macros for sqlez"
+        },
+        {
+          "name": "scanner",
+          "type": "library",
+          "description": "Firmware and network scanning"
+        },
+        {
+          "name": "sandbox",
+          "type": "library",
+          "description": "Sandbox runtime environment"
+        },
+        {
+          "name": "core",
+          "type": "library",
+          "description": "Core types, tasks, and vulnerability DB"
+        },
+        {
+          "name": "workspace",
+          "type": "library",
+          "description": "Workspace domain models"
+        },
+        {
+          "name": "ui",
+          "type": "library",
+          "description": "Shared UI components and theme"
+        }
+      ]
+    },
+    "main_features": [
+      {
+        "name": "Asset Management",
+        "description": "Manage UAV/red team assets with topology visualization"
+      },
+      {
+        "name": "Vulnerability Management",
+        "description": "Track and manage CVEs and vulnerabilities"
+      },
+      {
+        "name": "Task Management",
+        "description": "Kanban board for organizing security testing tasks"
+      },
+      {
+        "name": "Network Scanning",
+        "description": "Scan UAV firmware and network protocols"
+      },
+      {
+        "name": "Traffic Monitoring",
+        "description": "Monitor network traffic and analyze packets"
+      },
+      {
+        "name": "Sandbox Environment",
+        "description": "Isolated runtime for testing with VNC support"
+      },
+      {
+        "name": "AI Integration",
+        "description": "AI agent support for automated testing"
+      },
+      {
+        "name": "Mission Control",
+        "description": "Centralized dashboard for operations"
+      }
+    ],
+    "architecture_pattern": "Component-based UI with GPUI framework, workspace-style layout with panes, entity-based state management",
+    "test_framework": "GPUI built-in test utilities with TestAppContext"
+  }
+}

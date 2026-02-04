@@ -1,0 +1,597 @@
+[
+  {
+    "id": "TC001",
+    "title": "Login and Mission Selection Success",
+    "description": "Verify user can log in with valid credentials and select a mission from the Mission Control dashboard.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid username and password"
+      },
+      {
+        "type": "action",
+        "description": "Click login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm user is authenticated and redirected to Mission Control dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Select a mission from the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Selected mission loads with related task boards and assets"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Kanban Task Creation and Organization",
+    "description": "Verify that user can create security testing tasks and organize them on the Kanban board with priorities and tags.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Kanban board for selected mission"
+      },
+      {
+        "type": "action",
+        "description": "Create a new security testing task with title, description, and assign priority and tags"
+      },
+      {
+        "type": "action",
+        "description": "Drag and drop task across different Kanban columns"
+      },
+      {
+        "type": "assertion",
+        "description": "Task appears in correct column with assigned priority and tags displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Task status updates persist after page reload"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Real-time Task Monitoring with Embedded VNC and Traffic Analysis",
+    "description": "Verify tasks can be monitored live with embedded VNC stream and network traffic analysis functionalities.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Initiate a running security testing task from Kanban board"
+      },
+      {
+        "type": "action",
+        "description": "Access real-time monitoring view for the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Embedded VNC stream loads and displays active session"
+      },
+      {
+        "type": "assertion",
+        "description": "Network traffic monitoring panel shows live captured data"
+      },
+      {
+        "type": "action",
+        "description": "Apply TrafficQL filter to captured traffic"
+      },
+      {
+        "type": "assertion",
+        "description": "Filtered results update dynamically based on the query"
+      },
+      {
+        "type": "action",
+        "description": "Detect network anomalies via monitoring interface"
+      },
+      {
+        "type": "assertion",
+        "description": "Anomaly alerts appear accurately and promptly"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Vulnerability Management - CVE Tracking and AI Analysis",
+    "description": "Verify vulnerability management system tracks CVEs properly and AI-assisted analysis and PoC code generation functions work correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to vulnerability management interface"
+      },
+      {
+        "type": "action",
+        "description": "Add new CVE to tracking list"
+      },
+      {
+        "type": "assertion",
+        "description": "The CVE appears with correct details and risk score"
+      },
+      {
+        "type": "action",
+        "description": "Trigger AI-assisted vulnerability analysis"
+      },
+      {
+        "type": "assertion",
+        "description": "AI confidence scores and analysis results are displayed"
+      },
+      {
+        "type": "action",
+        "description": "Generate proof-of-concept (PoC) code using AI assistance"
+      },
+      {
+        "type": "assertion",
+        "description": "PoC code is generated and accessible for review"
+      },
+      {
+        "type": "action",
+        "description": "Filter and sort CVEs by severity and status"
+      },
+      {
+        "type": "assertion",
+        "description": "Filtering and sorting behave correctly and promptly"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Asset Management and Network Topology Visualization",
+    "description": "Verify UAV and red team assets are manageable with network topology visualization and accurate risk scoring.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open asset management interface"
+      },
+      {
+        "type": "action",
+        "description": "Add new asset with details such as device type, firmware version, and network parameters"
+      },
+      {
+        "type": "assertion",
+        "description": "New asset is listed with proper details and risk score computed"
+      },
+      {
+        "type": "action",
+        "description": "Visualize network topology including new and existing assets"
+      },
+      {
+        "type": "assertion",
+        "description": "Topology diagram accurately reflects asset connections and statuses"
+      },
+      {
+        "type": "action",
+        "description": "Update asset details and confirm UI refreshes accordingly"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes persist and are reflected in topology and risk score"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Network Scanning - Firmware and Protocol Analysis",
+    "description": "Verify network scanning functionality correctly analyzes UAV firmware and network protocols, displaying scan results.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to network scanning interface"
+      },
+      {
+        "type": "action",
+        "description": "Select UAV firmware or protocol to scan"
+      },
+      {
+        "type": "action",
+        "description": "Start scan process"
+      },
+      {
+        "type": "assertion",
+        "description": "Scan progress is displayed with status updates"
+      },
+      {
+        "type": "assertion",
+        "description": "Scan results are populated in detailed views upon completion"
+      },
+      {
+        "type": "action",
+        "description": "Validate scan results accuracy by checking known firmware signatures and protocol anomalies"
+      },
+      {
+        "type": "assertion",
+        "description": "Detected vulnerabilities and details match expected results"
+      },
+      {
+        "type": "action",
+        "description": "Cancel ongoing scan"
+      },
+      {
+        "type": "assertion",
+        "description": "Scan process stops and UI reflects cancellation"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Device Management - Device Lists and Details",
+    "description": "Verify users can view, filter, and edit device lists and detailed device information including firmware and wireless parameters.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open device list view"
+      },
+      {
+        "type": "action",
+        "description": "Filter device list by firmware version, status, or wireless parameters"
+      },
+      {
+        "type": "assertion",
+        "description": "Filtered device list updates correctly and efficiently"
+      },
+      {
+        "type": "action",
+        "description": "Select a device for detailed view"
+      },
+      {
+        "type": "assertion",
+        "description": "Device details including firmware, wireless parameters, and associated tasks are displayed"
+      },
+      {
+        "type": "action",
+        "description": "Edit and update device parameters"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes save successfully and are reflected in the UI"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to input invalid or out-of-range data in device details"
+      },
+      {
+        "type": "assertion",
+        "description": "Proper validation error messages are shown and invalid data is rejected"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Containerized AI Agent Monitoring and Logging",
+    "description": "Verify container monitoring UI displays real-time resource usage, runtime status, and logs for AI agents running in containers.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to container monitoring interface"
+      },
+      {
+        "type": "assertion",
+        "description": "All running AI agent containers are listed with current status"
+      },
+      {
+        "type": "action",
+        "description": "Select an AI agent container"
+      },
+      {
+        "type": "assertion",
+        "description": "Resource utilization metrics (CPU, memory, network) are shown and update in real-time"
+      },
+      {
+        "type": "action",
+        "description": "View container logs for the selected agent"
+      },
+      {
+        "type": "assertion",
+        "description": "Logs load correctly and new log entries appear live"
+      },
+      {
+        "type": "action",
+        "description": "Simulate container restart"
+      },
+      {
+        "type": "assertion",
+        "description": "UI reflects updated container status and resource metrics after restart"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Sandbox Environment Isolation and Operation Recording",
+    "description": "Verify sandbox environment properly isolates operations with VNC access and operational logging enabled for secure testing.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Launch sandbox environment for a testing task"
+      },
+      {
+        "type": "assertion",
+        "description": "Sandbox isolates runtime resources and does not interfere with host system"
+      },
+      {
+        "type": "action",
+        "description": "Access sandbox via provided VNC interface"
+      },
+      {
+        "type": "assertion",
+        "description": "VNC session provides real-time view and control of sandbox environment"
+      },
+      {
+        "type": "action",
+        "description": "Perform operations within sandbox environment"
+      },
+      {
+        "type": "action",
+        "description": "Stop and close the sandbox session"
+      },
+      {
+        "type": "assertion",
+        "description": "Operational logs are generated and accurately reflect actions in sandbox"
+      },
+      {
+        "type": "action",
+        "description": "Attempt unauthorized access from outside sandbox"
+      },
+      {
+        "type": "assertion",
+        "description": "Access is denied and logs show security event"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "AI Agent Task Scheduling, Execution, and Reporting",
+    "description": "Verify AI agents schedule, execute security testing tasks, and report results correctly through platform interfaces.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a security testing task and assign it to an AI agent"
+      },
+      {
+        "type": "action",
+        "description": "Trigger scheduling of AI agent for the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Scheduling completes successfully and agent status updates to running"
+      },
+      {
+        "type": "action",
+        "description": "Allow AI agent to execute and complete the assigned task"
+      },
+      {
+        "type": "assertion",
+        "description": "Agent reports findings and results to the platform"
+      },
+      {
+        "type": "action",
+        "description": "Review AI-generated analysis, confidence scores, and recommendations"
+      },
+      {
+        "type": "assertion",
+        "description": "Results are displayed accurately and are accessible in task and vulnerability views"
+      },
+      {
+        "type": "action",
+        "description": "Simulate AI agent failure during execution"
+      },
+      {
+        "type": "assertion",
+        "description": "Platform detects failure, reports error, and allows retry or reassignment of tasks"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Configurable Settings Panel and Workspace Layout",
+    "description": "Verify system configuration can be modified using the settings panel and workspace layout supports panes and sidebar for flexible UI arrangement.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open settings panel from categorized sidebar"
+      },
+      {
+        "type": "action",
+        "description": "Modify several configuration parameters such as UI theme, scheduling intervals, and notifications"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes are saved and applied immediately or after confirmation"
+      },
+      {
+        "type": "action",
+        "description": "Arrange workspace panes by adding, removing, and resizing"
+      },
+      {
+        "type": "assertion",
+        "description": "Workspace reflects user layout preferences consistently across sessions"
+      },
+      {
+        "type": "action",
+        "description": "Switch between light and theming color schemes"
+      },
+      {
+        "type": "assertion",
+        "description": "UI updates colors and elements accordingly with no layout breakage"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Mission Control Dashboard Drag-and-Drop Functionality",
+    "description": "Verify drag-and-drop functionality works correctly in Mission Control dashboard’s Kanban board and task list reordering.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Mission Control dashboard with Kanban board"
+      },
+      {
+        "type": "action",
+        "description": "Drag a task card from one status column to another"
+      },
+      {
+        "type": "assertion",
+        "description": "Task moves visually and status updates internally"
+      },
+      {
+        "type": "action",
+        "description": "Reorder tasks within the same column by drag-and-drop"
+      },
+      {
+        "type": "assertion",
+        "description": "Task order updates and persists after page refresh"
+      },
+      {
+        "type": "action",
+        "description": "Attempt drag operation with invalid target destination"
+      },
+      {
+        "type": "assertion",
+        "description": "Invalid moves are rejected and UI feedback is provided"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Performance Testing for Task Scheduling and Traffic Analysis",
+    "description": "Verify the system meets predefined benchmarks for task scheduling, network scanning, and traffic analysis under load.",
+    "category": "performance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate high volume of concurrent tasks scheduled and running"
+      },
+      {
+        "type": "assertion",
+        "description": "Task scheduling remains responsive and tasks execute within expected time limits"
+      },
+      {
+        "type": "action",
+        "description": "Perform large network traffic captures and apply complex TrafficQL filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Traffic analysis UI updates smoothly without lag or crashes"
+      },
+      {
+        "type": "action",
+        "description": "Run extensive firmware scans in parallel"
+      },
+      {
+        "type": "assertion",
+        "description": "Scanning processes complete within benchmark timeframes and resource usage stays within limits"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Security and Multi-Tenant Isolation Verification",
+    "description": "Verify security policies and multi-tenant isolation are enforced by the platform through penetration testing and user boundary enforcement.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt unauthorized data access between tenants or missions"
+      },
+      {
+        "type": "assertion",
+        "description": "Access is denied and audit logs record the attempt"
+      },
+      {
+        "type": "action",
+        "description": "Try privilege escalation exploiting UI or API vulnerabilities"
+      },
+      {
+        "type": "assertion",
+        "description": "Security controls prevent escalation and maintain role-based access restrictions"
+      },
+      {
+        "type": "action",
+        "description": "Run penetration tests targeting sandbox isolation"
+      },
+      {
+        "type": "assertion",
+        "description": "Sandbox security holds under all tested attack vectors"
+      },
+      {
+        "type": "action",
+        "description": "Check audit logging and alerting functions are triggered appropriately"
+      },
+      {
+        "type": "assertion",
+        "description": "All important security events are logged and notify administrators when needed"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "UI Responsiveness and Theming Validation Across Views",
+    "description": "Verify all major views conform visually to Figma designs, support responsive layouts, and theming with consistent UI elements.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open all major application views including Kanban, asset management, vulnerability management, scanning, traffic monitoring, devices and container monitoring"
+      },
+      {
+        "type": "assertion",
+        "description": "UI visually matches provided high-fidelity Figma designs with consistent fonts, colors, and element placement"
+      },
+      {
+        "type": "action",
+        "description": "Resize window to small, medium, and large breakpoints"
+      },
+      {
+        "type": "assertion",
+        "description": "All views adapt layout responsively without content clipping or overlap"
+      },
+      {
+        "type": "action",
+        "description": "Switch between light and configured color schemes"
+      },
+      {
+        "type": "assertion",
+        "description": "Visual theming updates UI elements consistently without visual artifacts"
+      },
+      {
+        "type": "action",
+        "description": "Verify button states, badges, tabs, cards render uniformly across views"
+      },
+      {
+        "type": "assertion",
+        "description": "UI controls respond to user interactions correctly with proper state feedback"
+      }
+    ]
+  }
+]

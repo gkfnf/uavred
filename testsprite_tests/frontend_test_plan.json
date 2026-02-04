@@ -1,0 +1,281 @@
+{
+  "project_name": "UAVRed",
+  "test_scope": "AI Settings Provider Configuration Interface",
+  "tests": [
+    {
+      "id": "AI-001",
+      "name": "Provider List Rendering",
+      "description": "Verify that all AI providers are displayed correctly in the left sidebar",
+      "steps": [
+        {
+          "action": "navigate",
+          "target": "settings",
+          "description": "Navigate to Settings page"
+        },
+        {
+          "action": "click",
+          "target": "AI category in sidebar",
+          "description": "Click on 'AI' category in left sidebar"
+        },
+        {
+          "action": "verify",
+          "target": "provider list",
+          "description": "Verify all 5 providers are visible: Kimi, DeepSeek, OpenAI, Claude, Ollama"
+        }
+      ],
+      "expected_result": "All 5 AI providers are displayed with correct icons, names, and descriptions"
+    },
+    {
+      "id": "AI-002",
+      "name": "Provider Selection",
+      "description": "Test selecting different providers from the list",
+      "steps": [
+        {
+          "action": "click",
+          "target": "DeepSeek provider card",
+          "description": "Click on DeepSeek provider in the list"
+        },
+        {
+          "action": "verify",
+          "target": "config panel",
+          "description": "Verify DeepSeek configuration panel is displayed"
+        },
+        {
+          "action": "click",
+          "target": "Kimi provider card",
+          "description": "Click on Kimi provider in the list"
+        },
+        {
+          "action": "verify",
+          "target": "config panel",
+          "description": "Verify Kimi configuration panel is displayed with Kimi-specific integration section"
+        }
+      ],
+      "expected_result": "Clicking provider switches to its configuration panel with correct content"
+    },
+    {
+      "id": "AI-003",
+      "name": "Provider Enable/Disable Toggle",
+      "description": "Test enabling and disabling a provider",
+      "steps": [
+        {
+          "action": "click",
+          "target": "Kimi provider card",
+          "description": "Select Kimi provider"
+        },
+        {
+          "action": "click",
+          "target": "enable toggle switch",
+          "description": "Click the enable toggle in the provider config header"
+        },
+        {
+          "action": "verify",
+          "target": "status indicator",
+          "description": "Verify provider status indicator turns green"
+        },
+        {
+          "action": "click",
+          "target": "enable toggle switch",
+          "description": "Click the toggle again to disable"
+        },
+        {
+          "action": "verify",
+          "target": "status indicator",
+          "description": "Verify provider status indicator turns gray"
+        }
+      ],
+      "expected_result": "Toggle switches provider on/off with visual feedback in status indicator"
+    },
+    {
+      "id": "AI-004",
+      "name": "API Configuration Input",
+      "description": "Test entering API endpoint and key",
+      "steps": [
+        {
+          "action": "click",
+          "target": "DeepSeek provider",
+          "description": "Select DeepSeek provider"
+        },
+        {
+          "action": "input",
+          "target": "endpoint input",
+          "value": "https://api.deepseek.com",
+          "description": "Enter API endpoint URL"
+        },
+        {
+          "action": "input",
+          "target": "API key input",
+          "value": "test-api-key-123",
+          "description": "Enter API key"
+        },
+        {
+          "action": "verify",
+          "target": "input values",
+          "description": "Verify both inputs display entered values"
+        }
+      ],
+      "expected_result": "Endpoint and API key inputs accept and display text correctly"
+    },
+    {
+      "id": "AI-005",
+      "name": "Provider Search Filter",
+      "description": "Test filtering providers by search query",
+      "steps": [
+        {
+          "action": "input",
+          "target": "provider search box",
+          "value": "deep",
+          "description": "Type 'deep' in provider search box"
+        },
+        {
+          "action": "verify",
+          "target": "provider list",
+          "description": "Verify only DeepSeek is visible in the list"
+        },
+        {
+          "action": "clear",
+          "target": "provider search box",
+          "description": "Clear the search box"
+        },
+        {
+          "action": "verify",
+          "target": "provider list",
+          "description": "Verify all providers are visible again"
+        }
+      ],
+      "expected_result": "Search filters providers by name and description, clearing restores full list"
+    },
+    {
+      "id": "AI-006",
+      "name": "Test Connection Button",
+      "description": "Test the connection testing functionality",
+      "steps": [
+        {
+          "action": "click",
+          "target": "DeepSeek provider",
+          "description": "Select DeepSeek provider"
+        },
+        {
+          "action": "input",
+          "target": "API key input",
+          "value": "invalid-key",
+          "description": "Enter an invalid API key"
+        },
+        {
+          "action": "click",
+          "target": "Test Connection button",
+          "description": "Click Test Connection button"
+        },
+        {
+          "action": "verify",
+          "target": "status message",
+          "description": "Verify error status message is displayed in red"
+        }
+      ],
+      "expected_result": "Test connection shows appropriate error message for invalid credentials"
+    },
+    {
+      "id": "AI-007",
+      "name": "Fetch Models Button",
+      "description": "Test fetching models from provider",
+      "steps": [
+        {
+          "action": "click",
+          "target": "Kimi provider",
+          "description": "Select Kimi provider"
+        },
+        {
+          "action": "click",
+          "target": "Fetch Models button",
+          "description": "Click Fetch Models button"
+        },
+        {
+          "action": "verify",
+          "target": "loading state",
+          "description": "Verify loading indicator is shown"
+        },
+        {
+          "action": "verify",
+          "target": "models list",
+          "description": "Verify models are displayed or error message shown"
+        }
+      ],
+      "expected_result": "Fetch models triggers API call and displays results or error"
+    },
+    {
+      "id": "AI-008",
+      "name": "Model Enable/Disable",
+      "description": "Test enabling and disabling individual models",
+      "steps": [
+        {
+          "action": "click",
+          "target": "Kimi provider",
+          "description": "Select Kimi provider"
+        },
+        {
+          "action": "verify",
+          "target": "models section",
+          "description": "Verify models section is visible with model list"
+        },
+        {
+          "action": "click",
+          "target": "model toggle",
+          "description": "Click toggle for first model"
+        },
+        {
+          "action": "verify",
+          "target": "model enabled count badge",
+          "description": "Verify enabled count badge updates correctly"
+        }
+      ],
+      "expected_result": "Toggling model updates its enabled state and reflects in the count badge"
+    },
+    {
+      "id": "AI-009",
+      "name": "Model Search Filter",
+      "description": "Test filtering models by search query",
+      "steps": [
+        {
+          "action": "click",
+          "target": "Kimi provider",
+          "description": "Select Kimi provider"
+        },
+        {
+          "action": "input",
+          "target": "model search input",
+          "value": "k2",
+          "description": "Type 'k2' in model search box"
+        },
+        {
+          "action": "verify",
+          "target": "filtered models",
+          "description": "Verify only models matching 'k2' are displayed"
+        }
+      ],
+      "expected_result": "Model search filters the list by model name and ID"
+    },
+    {
+      "id": "AI-010",
+      "name": "Settings Save",
+      "description": "Test saving settings",
+      "steps": [
+        {
+          "action": "click",
+          "target": "Kimi provider",
+          "description": "Select Kimi provider"
+        },
+        {
+          "action": "click",
+          "target": "Save Settings button",
+          "description": "Click Save Settings button"
+        },
+        {
+          "action": "verify",
+          "target": "status message",
+          "description": "Verify success message is displayed in green"
+        }
+      ],
+      "expected_result": "Save button persists settings and shows success confirmation"
+    }
+  ]
+}

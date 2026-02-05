@@ -10,6 +10,12 @@ pub struct TaskData {
     pub task_type: String,
     pub priority: String,
     pub status: String,
+    /// 任务目标/描述
+    pub mission_objective: Option<String>,
+    /// 元数据 JSON
+    pub metadata: Option<String>,
+    /// 任务来源
+    pub source: String,
 }
 
 impl TaskData {
@@ -26,7 +32,26 @@ impl TaskData {
             task_type,
             priority,
             status,
+            mission_objective: None,
+            metadata: None,
+            source: "manual".to_string(),
         }
+    }
+
+    /// 是否是 Agent 创建的任务
+    pub fn is_agent_task(&self) -> bool {
+        self.source == "agent"
+    }
+
+    /// 获取元数据 JSON
+    pub fn get_metadata(&self) -> Option<serde_json::Value> {
+        self.metadata.as_ref()
+            .and_then(|m| serde_json::from_str(m).ok())
+    }
+
+    /// 设置元数据
+    pub fn set_metadata(&mut self, value: serde_json::Value) {
+        self.metadata = Some(value.to_string());
     }
 }
 

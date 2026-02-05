@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/data",
+    "crates/ai_provider",
+    "crates/sqlez",
+    "crates/sqlez_macros",
+    "crates/db",
+    "crates/workspace",
+    "crates/sandbox",
+    "crates/agent",
+    "crates/scanner",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.lints]
+rust = { unsafe_code = "forbid" }
+
+[workspace.dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1"
+serde_repr = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+tokio = { version = "1.35", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+async-trait = "0.1"
+thiserror = "1.0"
+tracing = "0.1.41"
+anyhow = "1"
+futures = "0.3"
+parking_lot = "0.12"
+smol = "2"
+log = "0.4"
+dirs = "5.0"
+tracing-subscriber = "0.3"
+indoc = "2.0"
+
+sqlez = { path = "crates/sqlez" }
+sqlez_macros = { path = "crates/sqlez_macros" }

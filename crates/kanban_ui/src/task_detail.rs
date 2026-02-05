@@ -1,7 +1,9 @@
 //! TaskDetailPanel 组件 - 任务详情面板
 //!
 //! 显示任务的完整信息，包括标题、状态、优先级、类型等
+//! 集成 AI Agent 执行面板
 
+use crate::agent_execution::{AgentExecutionPanel, AgentExecutionSession, MissionObjective, create_demo_session};
 use data::TaskData;
 use gpui::prelude::FluentBuilder as _;
 use gpui::*;
@@ -21,21 +23,50 @@ type CloseHandler = Box<dyn Fn(&mut Window, &mut App) + 'static>;
 pub struct TaskDetailPanel {
     task: Option<TaskData>,
     on_close: Option<CloseHandler>,
+    /// Agent 执行面板
+    agent_panel: Option<Entity<AgentExecutionPanel>>,
 }
 
 impl TaskDetailPanel {
     /// 创建新的详情面板
-    pub fn new() -> Self {
+    pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             task: None,
             on_close: None,
+            agent_panel: None,
+        }
+    }
+
+    /// 初始化 Agent 面板（当面板被创建后调用）
+    pub fn init_agent_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.agent_panel.is_none() {
+            let session = create_demo_session();
+            let agent_panel = cx.new(|cx| AgentExecutionPanel::new(window, cx, session));
+            self.agent_panel = Some(agent_panel);
         }
     }
 
     /// 设置要显示的任务
-    pub fn task(mut self, task: Option<TaskData>) -> Self {
-        self.task = task;
-        self
+    pub fn set_task(&mut self, task: Option<TaskData>, window: &mut Window, cx: &mut Context<Self>) {
+        self.task = task.clone();
+        
+        // 当有新任务时，创建新的 Agent 执行面板
+        if let Some(ref task) = task {
+            // 创建 Agent 执行会话
+            let objective = if let Some(ref obj) = task.mission_objective {
+                MissionObjective::new(&task.title, task.id as u64)
+                    .with_description(obj)
+            } else {
+                MissionObjective::new(&task.title, task.id as u64)
+                    .with_description("分析目标系统的安全漏洞")
+            };
+            
+            let session = AgentExecutionSession::new("PENLIGENT AGENT", objective);
+            let new_panel = cx.new(|cx| AgentExecutionPanel::new(window, cx, session));
+            self.agent_panel = Some(new_panel);
+        }
+        
+        cx.notify();
     }
 
     /// 设置关闭回调
@@ -91,7 +122,12 @@ impl TaskDetailPanel {
 
 impl Default for TaskDetailPanel {
     fn default() -> Self {
-        Self::new()
+        // Default 实现用于类型占位，实际应使用 TaskDetailPanel::new
+        Self {
+            task: None,
+            on_close: None,
+            agent_panel: None,
+        }
     }
 }
 
@@ -192,5 +228,16 @@ impl Render for TaskDetailPanel {
                         )
                     }),
             )
+            // Agent 执行面板（当有任务时显示）
+            .when_some(self.task.clone(), |this, _task| {
+                this.when_some(self.agent_panel.clone(), |this, panel| {
+                    this.child(
+                        div()
+                            .flex_1()
+                            .h(px(400.0))
+                            .child(panel)
+                    )
+                })
+            })
     }
 }

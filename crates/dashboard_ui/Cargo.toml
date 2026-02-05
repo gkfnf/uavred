@@ -9,3 +9,6 @@ gpui-component = { path = "../../src/gpui-component/crates/ui", package = "gpui-
 workspace = { path = "../workspace" }
 ui = { path = "../ui" }
 data = { path = "../data" }
+core = { path = "../core" }
+kanban_ui = { path = "../kanban_ui" }
+tokio = { workspace = true }

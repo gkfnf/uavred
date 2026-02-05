@@ -105,7 +105,7 @@ impl Render for SettingsPanel {
             .size_full()
             .gap_0()
             .child(
-                Sidebar::left()
+                Sidebar::new("settings-sidebar")
                     .collapsible(false)
                     .header(
                         v_flex()

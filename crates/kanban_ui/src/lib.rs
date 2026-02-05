@@ -16,13 +16,17 @@
 //! - 实时搜索和过滤
 //! - 键盘导航（箭头键、Enter、Tab、ESC）
 
+pub mod agent_execution;
 pub mod animations;
+pub mod intent;
 pub mod kanban_board;
 pub mod kanban_column;
 pub mod task_card;
 pub mod task_detail;
 
+pub use agent_execution::{AgentExecutionPanel, AgentExecutionSession, AgentExecutionStatus};
 pub use kanban_board::{KanbanBoard, KanbanEvent};
 pub use kanban_column::KanbanColumn;
+pub use intent::{IntentParserPanel, IntentParseEvent, ParseState, KanbanWithIntentParser};
 pub use task_card::{DragTask, TaskCard};
 pub use task_detail::TaskDetailPanel;

@@ -10,6 +10,9 @@ pub struct TaskData {
     pub task_type: String,
     pub priority: String,
     pub status: String,
+    pub mission_objective: Option<String>,
+    pub metadata: Option<String>,
+    pub source: String,
 }
 
 impl TaskData {
@@ -26,6 +29,9 @@ impl TaskData {
             task_type,
             priority,
             status,
+            mission_objective: None,
+            metadata: None,
+            source: "manual".to_string(),
         }
     }
 }

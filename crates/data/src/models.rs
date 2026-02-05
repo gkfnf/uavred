@@ -139,6 +139,9 @@ impl From<Task> for workspace::TaskData {
             task_type: task.task_type,
             priority: task.priority.as_str().to_string(),
             status: task.status.as_str().to_string(),
+            mission_objective: if task.mission_objective.is_empty() { None } else { Some(task.mission_objective) },
+            metadata: if task.metadata.is_null() { None } else { Some(task.metadata.to_string()) },
+            source: task.source,
         }
     }
 }

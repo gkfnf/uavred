@@ -1,4 +1,5 @@
 pub mod add_task_form;
+pub mod add_task_intent;
 pub mod add_task_modal;
 pub mod components;
 pub mod dashboard_panel;

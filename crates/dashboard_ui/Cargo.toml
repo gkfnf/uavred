@@ -6,6 +6,10 @@ edition = "2021"
 [dependencies]
 gpui = { workspace = true }
 gpui-component = { path = "../../src/gpui-component/crates/ui", package = "gpui-component" }
+core = { path = "../core" }
 workspace = { path = "../workspace" }
 ui = { path = "../ui" }
 data = { path = "../data" }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

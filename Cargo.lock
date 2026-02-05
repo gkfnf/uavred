@@ -1406,8 +1406,16 @@ dependencies = [
 name = "core"
 version = "0.1.0"
 dependencies = [
+ "ai_provider",
+ "anyhow",
+ "async-trait",
  "chrono",
+ "data",
  "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -1703,9 +1711,13 @@ checksum = "e2931af7e13dc045d8e9d26afccc6fa115d64e115c9c84b1166288b46f6782c2"
 name = "dashboard_ui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "core",
  "data",
  "gpui",
  "gpui-component",
+ "serde",
+ "serde_json",
  "ui",
  "workspace",
 ]
@@ -4086,10 +4098,15 @@ dependencies = [
 name = "kanban_ui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "core",
  "data",
  "gpui",
  "gpui-component",
+ "serde",
+ "serde_json",
  "ui",
+ "uuid",
  "workspace",
 ]
 

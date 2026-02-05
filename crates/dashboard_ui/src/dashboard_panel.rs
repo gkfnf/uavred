@@ -200,6 +200,9 @@ impl DashboardPanel {
                                         task_type: String::from("task"),
                                         priority: String::from("Medium"),
                                         status: task_status_str.to_string(),
+                                        mission_objective: None,
+                                        metadata: None,
+                                        source: "manual".to_string(),
                                     };
                                     eprintln!("DEBUG: calling add_task");
                                     this.add_task(task, cx);

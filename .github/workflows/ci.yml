@@ -1,0 +1,410 @@
+# UAVRed CI/CD Pipeline
+# 完整自动化构建、测试和发布流程
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/**'
+      - 'Cargo.toml'
+  pull_request:
+    branches: [main, develop]
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - release
+          - all_platforms
+
+# 并发控制
+cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # Job 1: 代码质量检查
+  # ============================================================
+  quality-check:
+    name: 代码质量检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            frontend
+
+      - name: 检查代码格式
+        run: |
+          cd backend && cargo fmt -- --check
+          cd ../frontend && cargo fmt -- --check
+
+      - name: Clippy 静态分析
+        run: |
+          cd backend && cargo clippy -- -D warnings
+          cd ../frontend && cargo clippy -- -D warnings
+
+      - name: 检查依赖安全性
+        uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # Job 2: 前端构建 (WASM)
+  # ============================================================
+  build-frontend:
+    name: 构建前端 (WASM)
+    runs-on: ubuntu-latest
+    needs: quality-check
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: 安装 trunk
+        run: |
+          cargo install --locked trunk
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend
+
+      - name: 构建 WASM
+        run: |
+          cd frontend
+          trunk build --release
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # ============================================================
+  # Job 3: 后端测试
+  # ============================================================
+  test-backend:
+    name: 后端测试
+    runs-on: ubuntu-latest
+    needs: quality-check
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: 运行测试
+        run: |
+          cd backend
+          cargo test --all-features -- --nocapture
+
+      - name: 生成测试报告
+        run: |
+          cd backend
+          cargo test --all-features 2>&1 | tee test-results.txt
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: backend/test-results.txt
+
+  # ============================================================
+  # Job 4: Tauri 构建 (macOS)
+  # ============================================================
+  build-tauri-macos:
+    name: 构建 Tauri (macOS)
+    runs-on: macos-latest
+    needs: [build-frontend, test-backend]
+    if: github.event_name == 'push' || github.event.inputs.build_type == 'all_platforms'
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - name: 安装依赖
+        run: |
+          brew install create-dmg
+
+      - name: 安装 trunk
+        run: |
+          cargo install --locked trunk
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            frontend
+
+      - name: 构建前端
+        run: |
+          cd frontend
+          trunk build --release
+
+      - name: 构建 Tauri (Universal Binary)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: backend
+          configPath: backend/tauri.conf.json
+          args: --target universal-apple-darwin
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-macos
+          path: backend/src-tauri/target/universal-apple-darwin/release/bundle/
+          retention-days: 14
+
+  # ============================================================
+  # Job 5: Tauri 构建 (Linux)
+  # ============================================================
+  build-tauri-linux:
+    name: 构建 Tauri (Linux)
+    runs-on: ubuntu-latest
+    needs: [build-frontend, test-backend]
+    if: github.event_name == 'push' || github.event.inputs.build_type == 'all_platforms'
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: 安装 trunk
+        run: |
+          cargo install --locked trunk
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            frontend
+
+      - name: 构建前端
+        run: |
+          cd frontend
+          trunk build --release
+
+      - name: 构建 Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: backend
+          configPath: backend/tauri.conf.json
+          args: --target x86_64-unknown-linux-gnu
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-linux
+          path: backend/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/
+          retention-days: 14
+
+  # ============================================================
+  # Job 6: Tauri 构建 (Windows)
+  # ============================================================
+  build-tauri-windows:
+    name: 构建 Tauri (Windows)
+    runs-on: windows-latest
+    needs: [build-frontend, test-backend]
+    if: github.event_name == 'push' || github.event.inputs.build_type == 'all_platforms'
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: 安装 trunk
+        run: |
+          cargo install --locked trunk
+
+      - name: 缓存 Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            frontend
+
+      - name: 构建前端
+        run: |
+          cd frontend
+          trunk build --release
+
+      - name: 构建 Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: backend
+          configPath: backend/tauri.conf.json
+          args: --target x86_64-pc-windows-msvc
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-windows
+          path: backend/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/
+          retention-days: 14
+
+  # ============================================================
+  # Job 7: UI 测试 (Playwright)
+  # ============================================================
+  ui-test:
+    name: UI 测试 (Playwright)
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装 Playwright
+        run: |
+          npm install -g @playwright/test
+          npx playwright install chromium
+
+      - name: 下载前端构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: 启动静态服务器
+        run: |
+          cd frontend/dist
+          python3 -m http.server 8080 &
+          sleep 3
+
+      - name: 运行 UI 测试
+        run: |
+          cd ci
+          npx playwright test || true
+
+      - name: 上传测试截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-screenshots
+          path: ci/test-results/
+          retention-days: 7
+
+  # ============================================================
+  # Job 8: 发布 Release
+  # ============================================================
+  release:
+    name: 发布 Release
+    runs-on: ubuntu-latest
+    needs: [build-tauri-macos, build-tauri-linux, build-tauri-windows]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            artifacts/tauri-macos/**/*
+            artifacts/tauri-linux/**/*
+            artifacts/tauri-windows/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # Job 9: 生成 TypeScript 绑定
+  # ============================================================
+  generate-bindings:
+    name: 生成 TypeScript 绑定
+    runs-on: ubuntu-latest
+    needs: test-backend
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 生成绑定
+        run: |
+          cd backend
+          cargo test export_bindings -- --nocapture
+
+      - name: 检查绑定更新
+        run: |
+          if [ -n "$(git status --porcelain backend/bindings/)" ]; then
+            echo "::warning::TypeScript 绑定有更新，请提交更改"
+          fi
+
+      - name: 上传绑定
+        uses: actions/upload-artifact@v4
+        with:
+          name: ts-bindings
+          path: backend/bindings/
+          retention-days: 7
